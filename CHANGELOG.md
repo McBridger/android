@@ -34,3 +34,11 @@
     - Changed parent theme from `Theme.MaterialComponents.DayNight.NoActionBar` to `Theme.Material3.DayNight.NoActionBar`.
     - Removed `colorPrimaryVariant` and `colorSecondaryVariant` attributes.
     - Updated `android:statusBarColor` to reference `?attr/colorPrimary`.
+
+## 7
+- Resolved Kotlin and Compose Compiler compatibility issues:
+    - Updated `kotlin` version to `2.2.0` in `gradle/libs.versions.toml`.
+    - Updated `composeCompiler` version to `2.2.0` in `gradle/libs.versions.toml`.
+    - Defined `kotlin-compose-compiler` plugin in `gradle/libs.versions.toml`.
+    - Replaced direct plugin `id 'org.jetbrains.kotlin.plugin.compose'` with `alias(libs.plugins.kotlin.compose.compiler)` in `app/build.gradle`.
+    - Removed the `composeOptions` block from `app/build.gradle` as it's now managed by the plugin.

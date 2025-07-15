@@ -1,8 +1,8 @@
 [versions]
 # --- Stable and compatible versions ---
 agp = "8.4.1"                   # Current stable version of Android Gradle Plugin
-kotlin = "1.9.23"                 # Stable Kotlin version
-composeCompiler = "1.5.11"        # Compose Compiler version compatible with Kotlin 1.9.23
+kotlin = "2.2.0"                 # Stable Kotlin version
+composeCompiler = "2.2.0"        # Compose Compiler version is the same as Kotlin version
 composeBom = "2024.06.00"         # Current stable BOM version
 activityCompose = "1.9.0"
 activityKtx = "1.9.0"
@@ -51,3 +51,4 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
