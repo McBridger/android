@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId "com.bridger"
-        minSdk 35
+        minSdk 26
         targetSdk 36
         versionCode 1
         versionName "1.0"
@@ -23,8 +23,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 }
 
@@ -32,11 +32,10 @@ dependencies {
 
     implementation libs.appcompat
     implementation libs.material
-    implementation 'no.nordicsemi.android:ble:2.10.2'
-    implementation 'no.nordicsemi.android:ble-ktx:2.10.2'
-    implementation 'no.nordicsemi.android.support.v18:scanner:1.6.0'
-    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.8.2'
-    implementation 'androidx.activity:activity-ktx:1.9.0'
+    implementation libs.ble
+    implementation libs.scanner
+    implementation libs.rxjava
+    implementation libs.rxandroid
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
