@@ -22,9 +22,10 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <!-- 2. Our device list, which will now be below the app bar -->
-    <ListView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/device_list_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
 </LinearLayout>

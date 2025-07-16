@@ -15,23 +15,26 @@ public class BleScannerManager {
   private static final String TAG = "BleScannerManager";
   private final BluetoothLeScannerCompat scanner = BluetoothLeScannerCompat.getScanner();
   private final ScanSettings scanSettings;
-
-  // The this.scanCallback field is no longer needed, as the callback will be created and used
-  // locally within the Observable.create lambda, which is even safer.
+  private final Observable<ScanResult> sharedScanStream; // Field for the hot stream
 
   public BleScannerManager() {
     this.scanSettings = new ScanSettings.Builder()
-        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+        .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
         .setLegacy(false)
         .build();
+
+    // Initialize the hot stream here
+    this.sharedScanStream = createRawScanObservable()
+        // .distinct(scanResult -> scanResult.getDevice().getAddress())
+        .share(); // Convert to a hot Observable
   }
 
   /**
-   * Returns a "clean" stream of scan results with unique devices.
+   * Returns a stream of raw scan results.
+   * This stream is now "hot" and shared among all subscribers.
    */
   public Observable<ScanResult> getScanStream() {
-    return createRawScanObservable()
-        .distinct(scanResult -> scanResult.getDevice().getAddress());
+    return this.sharedScanStream; // Return the already prepared hot stream
   }
 
   /**
