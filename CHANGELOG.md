@@ -20,3 +20,10 @@
     - The device list state is managed by a sophisticated RxJava stream using `groupBy`, `publish`, `throttleFirst`, and `debounce` operators to handle the lifecycle of each device individually and efficiently.
     - The state reducer was optimized to use a `Map` for O(1) performance on device updates and removals.
     - The entire codebase was refactored for readability and maintainability, with complex logic extracted into private methods.
+
+## 4
+- Implemented navigation to a new screen (`DeviceActivity`) upon clicking a device in the scanner list.
+- Created `app/src/main/java/com/bridger/ui/device/` directory for device-specific UI components.
+- Added `DeviceActivity.java`, `DeviceViewModel.java`, and `ServiceListAdapter.java` for displaying BLE services.
+- Created `activity_device.xml` and `list_item_service.xml` layouts.
+- Registered `DeviceActivity` in `AndroidManifest.xml`.

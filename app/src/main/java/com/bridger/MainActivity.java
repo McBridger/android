@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
     Toolbar toolbar = findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
 
-    deviceListAdapter = new DeviceListAdapter();
+    deviceListAdapter = new DeviceListAdapter(this); // Pass context here
     binding.deviceListView.setLayoutManager(new LinearLayoutManager(this));
     binding.deviceListView.setAdapter(deviceListAdapter);
 
