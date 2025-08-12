@@ -27,3 +27,8 @@
 - Added `DeviceActivity.java`, `DeviceViewModel.java`, and `ServiceListAdapter.java` for displaying BLE services.
 - Created `activity_device.xml` and `list_item_service.xml` layouts.
 - Registered `DeviceActivity` in `AndroidManifest.xml`.
+
+## 6
+- **Core Architecture:** Implemented `BleConnectionManager` as a Singleton to serve as a single source of truth for the BLE connection state, using the modern `ConnectionObserver` from the Nordic BLE library.
+- **Constants:** Created `Constants.java` to centralize app-wide constants like service and characteristic UUIDs.
+- **Reactive API:** The `BleConnectionManager` now exposes connection state, discovered services, and errors via a clean, observable RxJava API.

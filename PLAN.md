@@ -57,8 +57,8 @@ The project relies on the following libraries from Nordic Semiconductor for robu
 ## 6. TODOs
 
 ### Phase 0: Core Architecture & Setup
--   [ ] **Constants:** Create a `Constants.java` file to hold all static app-wide constants, including the service and characteristic UUIDs.
--   [ ] **Connection Manager:** Create a Singleton class `BleConnectionManager` to act as the single source of truth for the BLE connection state, including error states and disconnection events. All ViewModels and Services will observe this manager.
+-   [x] **Constants:** Create a `Constants.java` file to hold all static app-wide constants, including the service and characteristic UUIDs.
+-   [x] **Connection Manager:** Create a Singleton class `BleConnectionManager` to act as the single source of truth for the BLE connection state, including error states and disconnection events. All ViewModels and Services will observe this manager.
 
 ### Phase 1: Scanner & Explorer Enhancements
 -   [ ] **Scanner UI:** Modify `DeviceListViewHolder` to check if a `ScanResult` contains the `Bridger Sync Service` UUID and apply a visual highlight.
