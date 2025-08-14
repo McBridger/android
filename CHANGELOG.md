@@ -32,3 +32,13 @@
 - **Core Architecture:** Implemented `BleConnectionManager` as a Singleton to serve as a single source of truth for the BLE connection state, using the modern `ConnectionObserver` from the Nordic BLE library.
 - **Constants:** Created `Constants.java` to centralize app-wide constants like service and characteristic UUIDs.
 - **Reactive API:** The `BleConnectionManager` now exposes connection state, discovered services, and errors via a clean, observable RxJava API.
+
+## 7
+- **Phase 1: Scanner & Device Explorer Features and Bug Fixes:**
+    - **Scanner UI Enhancement:** Implemented visual highlighting for devices advertising the `Bridger Sync Service` UUID in the scanner list. The `DeviceScanResult` class now encapsulates the logic for identifying a Bridger device, ensuring a clean separation of concerns, and `DeviceListViewHolder` uses this flag to apply a `teal_200` background color.
+    - **Device Explorer UI:** Added "Connect", "Disconnect", and a hidden "Go to Sync Panel" button to `activity_device.xml`.
+    - **Device Explorer Logic:** Implemented robust connection and disconnection functionality in `DeviceViewModel` using `BleConnectionManager`. `DeviceViewModel` now correctly observes and exposes discovered BLE services, which are displayed in `DeviceActivity` using `ServiceListAdapter`. The "Go to Sync Panel" button is conditionally visible based on the discovery of the `Bridger Sync Service`.
+    - **View Binding:** Migrated `DeviceActivity` to use View Binding for cleaner and safer UI element access, and ensured `activity_device.xml` correctly includes all necessary UI elements for View Binding to resolve symbols.
+    - **Navigation Fixes:** Corrected navigation from `MainActivity` to `DeviceActivity` to pass the `ScanResult` object as an `EXTRA_SCAN_RESULT`.
+    - **API Alignment:** Corrected `DeviceViewModel` and `DeviceActivity`'s interactions with `BleConnectionManager`'s API, including using the correct `ConnectionState` enum, method names (`getConnectionState()`, `getDiscoveredServices()`), and argument types (`BluetoothDevice` for `connect()`, no arguments for `disconnect()`).
+    - **Cleanup:** Removed the prematurely created `activity_connection.xml` file.

@@ -30,8 +30,7 @@ public class DeviceListAdapter extends ListAdapter<DeviceScanResult, DeviceListV
         holder.bind(device);
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, DeviceActivity.class);
-            intent.putExtra(DeviceActivity.EXTRA_DEVICE_ADDRESS, device.getAddress());
-            intent.putExtra(DeviceActivity.EXTRA_DEVICE_NAME, device.getName()); // Pass the device name
+            intent.putExtra(DeviceActivity.EXTRA_SCAN_RESULT, device.getRawScanResult()); // Pass the full ScanResult
             context.startActivity(intent);
         });
     }

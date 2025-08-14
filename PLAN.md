@@ -61,11 +61,11 @@ The project relies on the following libraries from Nordic Semiconductor for robu
 -   [x] **Connection Manager:** Create a Singleton class `BleConnectionManager` to act as the single source of truth for the BLE connection state, including error states and disconnection events. All ViewModels and Services will observe this manager.
 
 ### Phase 1: Scanner & Explorer Enhancements
--   [ ] **Scanner UI:** Modify `DeviceListViewHolder` to check if a `ScanResult` contains the `Bridger Sync Service` UUID and apply a visual highlight.
--   [ ] **Device Explorer UI:** Add "Connect", "Disconnect", and a hidden "Go to Sync Panel" button to `activity_device.xml`.
--   [ ] **Device Explorer Logic:** In `DeviceViewModel`, use the `BleConnectionManager` to implement the `connect()` and `disconnect()` methods.
--   [ ] **Device Explorer Logic:** Upon connection, update the UI to list all discovered services and characteristics.
--   [ ] **Device Explorer Logic:** If the `Bridger Sync Service` is found, make the "Go to Sync Panel" button visible.
+-   [x] **Scanner UI:** Modify `DeviceListViewHolder` to check if a `ScanResult` contains the `Bridger Sync Service` UUID and apply a visual highlight.
+-   [x] **Device Explorer UI:** Add "Connect", "Disconnect", and a hidden "Go to Sync Panel" button to `activity_device.xml`.
+-   [x] **Device Explorer Logic:** In `DeviceViewModel`, use the `BleConnectionManager` to implement the `connect()` and `disconnect()` methods.
+-   [x] **Device Explorer Logic:** Upon connection, update the UI to list all discovered services and characteristics.
+-   [x] **Device Explorer Logic:** If the `Bridger Sync Service` is found, make the "Go to Sync Panel" button visible.
 
 ### Phase 2: The Sync Panel (`ConnectionActivity`)
 -   [ ] **Create Files:** Create `ConnectionActivity.java`, `ConnectionViewModel.java`, and `activity_connection.xml`.

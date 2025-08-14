@@ -5,7 +5,7 @@ import java.util.UUID;
 public class Constants {
 
     // Service UUID
-    public static final UUID BRIDGER_SERVICE_UUID = UUID.fromString("A0B1C2D3-E4F5-46A7-B8C9-D0E1F2A3B4C5");
+    public static final UUID BRIDGER_SERVICE_UUID = UUID.fromString("81a936be-a052-4ef1-9c3c-073c0b63438d");
 
     // Characteristic UUIDs
     public static final UUID ANDROID_TO_MAC_CHARACTERISTIC_UUID = UUID.fromString("A1B2C3D4-E5F6-47A8-B9CA-D1E2F3A4B5C6");
