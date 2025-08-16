@@ -59,8 +59,8 @@ public class DeviceActivity extends AppCompatActivity {
         binding.connectButton.setOnClickListener(v -> viewModel.connect(initialScanResult));
         binding.disconnectButton.setOnClickListener(v -> viewModel.disconnect());
         binding.goToSyncButton.setOnClickListener(v -> {
-            // TODO: Navigate to ConnectionActivity
-            Toast.makeText(this, "Navigating to Sync Panel (Not yet implemented)", Toast.LENGTH_SHORT).show();
+            // Navigate to ConnectionActivity
+            startActivity(new android.content.Intent(this, com.bridger.ui.connection.ConnectionActivity.class));
         });
 
         // Observe ViewModel streams
@@ -74,7 +74,13 @@ public class DeviceActivity extends AppCompatActivity {
 
         disposables.add(viewModel.getBridgerServiceFoundStream()
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(found -> binding.goToSyncButton.setVisibility(found ? View.VISIBLE : View.GONE)));
+                .subscribe(found -> {
+                    binding.goToSyncButton.setVisibility(found ? View.VISIBLE : View.GONE);
+                    // Show a toast if Bridger service is not found AND we are in a connected/ready state
+                    if (!found && (viewModel.getConnectionStateStream().blockingFirst() == ConnectionState.CONNECTED || viewModel.getConnectionStateStream().blockingFirst() == ConnectionState.READY)) {
+                        Toast.makeText(this, "Bridger Sync Service not found on this device.", Toast.LENGTH_LONG).show();
+                    }
+                }));
     }
 
     private void updateConnectionStateUi(ConnectionState state) {

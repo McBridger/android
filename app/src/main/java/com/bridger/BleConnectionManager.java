@@ -10,11 +10,25 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Consumer;
 
+import com.bridger.constants.Constants;
+import com.bridger.events.ClipboardEvent;
+import com.bridger.model.Characteristic;
+
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import no.nordicsemi.android.ble.BleManager;
+import no.nordicsemi.android.ble.data.Data;
 import no.nordicsemi.android.ble.observer.ConnectionObserver;
 
 public class BleConnectionManager {
@@ -22,17 +36,20 @@ public class BleConnectionManager {
     private static final String TAG = "BleConnectionManager";
     private static BleConnectionManager instance;
     private final BridgerBleManager bleManager;
+    private final CompositeDisposable disposables = new CompositeDisposable();
 
-    // RxJava Subjects to emit state changes and data
     private final BehaviorSubject<ConnectionState> connectionStateSubject = BehaviorSubject.createDefault(ConnectionState.DISCONNECTED);
     private final BehaviorSubject<List<BluetoothGattService>> servicesSubject = BehaviorSubject.create();
     private final BehaviorSubject<Throwable> errorSubject = BehaviorSubject.create();
+    public final PublishSubject<ClipboardEvent> clipboardEvents = PublishSubject.create();
 
     public enum ConnectionState {
         DISCONNECTED,
         CONNECTING,
         CONNECTED,
-        DISCONNECTING
+        DISCONNECTING,
+        READY,
+        INITIALIZING
     }
 
     private BleConnectionManager(@NonNull Context context) {
@@ -56,7 +73,7 @@ public class BleConnectionManager {
 
             @Override
             public void onDeviceReady(@NonNull BluetoothDevice device) {
-                connectionStateSubject.onNext(ConnectionState.CONNECTED);
+                connectionStateSubject.onNext(ConnectionState.READY);
             }
 
             @Override
@@ -67,9 +84,23 @@ public class BleConnectionManager {
             @Override
             public void onDeviceDisconnected(@NonNull BluetoothDevice device, int reason) {
                 connectionStateSubject.onNext(ConnectionState.DISCONNECTED);
-                servicesSubject.onNext(List.of()); // Clear services on disconnect
+                servicesSubject.onNext(List.of());
             }
         });
+
+        // Subscribe to clipboardEvents to handle outgoing clipboard data
+        disposables.add(clipboardEvents
+                .filter(event -> event instanceof ClipboardEvent.Send)
+                .cast(ClipboardEvent.Send.class)
+                .flatMapCompletable(sendEvent -> {
+                    Data data = new Data(sendEvent.text.getBytes());
+                    return bleManager.performWriteCharacteristic(data);
+                })
+                .subscribeOn(Schedulers.io())
+                .subscribe(
+                        () -> Log.d(TAG, "Clipboard data sent via internal subscription"),
+                        throwable -> errorSubject.onNext(new Throwable("Failed to send clipboard data: " + throwable.getMessage()))
+                ));
     }
 
     public static synchronized BleConnectionManager getInstance(@NonNull Context context) {
@@ -114,74 +145,95 @@ public class BleConnectionManager {
         bleManager.disconnect().enqueue();
     }
 
-    // --- Characteristic Operations ---
-    // These methods now delegate to the inner BleManager class using the new names
-
-    public void enableNotifications(@NonNull BluetoothGattCharacteristic characteristic) {
-        // Call the newly named method to avoid clashing
-        bleManager.performEnableNotifications(characteristic);
-    }
-
-    public void readCharacteristic(@NonNull BluetoothGattCharacteristic characteristic) {
-        // Call the newly named method to avoid clashing
-        bleManager.performReadCharacteristic(characteristic);
-    }
-
-
     // The inner class that extends BleManager and can access protected methods
     private class BridgerBleManager extends BleManager {
+
+        // Define all supported characteristics with their UUIDs and notification callbacks
+        private final Map<UUID, Characteristic> SUPPORTED_CHARACTERISTICS = new HashMap<>();
+
+        {
+            // Android to Mac Characteristic (Write)
+            SUPPORTED_CHARACTERISTICS.put(Constants.ANDROID_TO_MAC_CHARACTERISTIC_UUID, new Characteristic(Constants.ANDROID_TO_MAC_CHARACTERISTIC_UUID));
+
+            // Mac to Android Characteristic (Notify) - Dummy callback for now, as requested
+            SUPPORTED_CHARACTERISTICS.put(Constants.MAC_TO_ANDROID_CHARACTERISTIC_UUID, new Characteristic(Constants.MAC_TO_ANDROID_CHARACTERISTIC_UUID, data -> {
+                String value = data.getStringValue(0);
+                if (value == null) return;
+                clipboardEvents.onNext(new ClipboardEvent.Receive(value));
+            }));
+        }
 
         public BridgerBleManager(@NonNull Context context) {
             super(context);
         }
 
-        // --- Helper methods with new names to avoid clashing with the superclass ---
-        
-        public void performEnableNotifications(@NonNull BluetoothGattCharacteristic characteristic) {
-            setNotificationCallback(characteristic)
-                    .with((device, data) -> {
-                        Log.d(TAG, "Notification received from " + characteristic.getUuid() + ": " + data.getStringValue(0));
-                        // TODO: Emit this data via an RxJava Subject if needed
-                    });
-            enableNotifications(characteristic).enqueue(); // This calls the superclass method
-        }
-
-        public void performReadCharacteristic(@NonNull BluetoothGattCharacteristic characteristic) {
-            readCharacteristic(characteristic) // This calls the superclass method
-                    .with((device, data) -> {
-                        Log.d(TAG, "Characteristic " + characteristic.getUuid() + " read: " + data.getStringValue(0));
-                        // TODO: Emit this data via an RxJava Subject if needed
-                    })
-                    .fail((device, status) -> {
-                        errorSubject.onNext(new Throwable("Failed to read characteristic with status: " + status));
-                    })
-                    .enqueue();
-        }
-
-        @NonNull
         @Override
-        protected BleManagerGattCallback getGattCallback() {
-            return new BridgerBleManagerGattCallback();
+        public void log(int priority, @NonNull String message) {
+            Log.println(priority, TAG, message);
         }
 
-        private class BridgerBleManagerGattCallback extends BleManagerGattCallback {
-            @Override
-            protected void initialize() {
-                // Called when the device is ready. Perform initial setup here.
+        public Completable performWriteCharacteristic(@NonNull Data data) {
+            return Completable.create(emitter -> {
+                Characteristic androidToMacChar = SUPPORTED_CHARACTERISTICS.get(Constants.ANDROID_TO_MAC_CHARACTERISTIC_UUID);
+
+                if (androidToMacChar == null || androidToMacChar.gattCharacteristic == null) {
+                    emitter.onError(new Throwable("Characteristic not found: " + Constants.ANDROID_TO_MAC_CHARACTERISTIC_UUID));
+                    return;
+                }
+                writeCharacteristic(androidToMacChar.gattCharacteristic, data, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+                        .split()
+                        .done(device -> emitter.onComplete())
+                        .fail((device, status) -> emitter.onError(new Throwable("Failed to write characteristic with status: " + status)))
+                        .enqueue();
+            });
+        }
+
+        @Override
+        protected boolean isRequiredServiceSupported(@NonNull final BluetoothGatt gatt) {
+            servicesSubject.onNext(gatt.getServices());
+            final BluetoothGattService service = gatt.getService(Constants.BRIDGER_SERVICE_UUID);
+
+            if (service != null) {
+                for (Characteristic characteristic : SUPPORTED_CHARACTERISTICS.values()) {
+                    BluetoothGattCharacteristic gattChar = service.getCharacteristic(characteristic.uuid);
+                    if (gattChar != null) {
+                        characteristic.gattCharacteristic = gattChar;
+                    }
+                }
             }
 
-            @Override
-            public boolean isRequiredServiceSupported(@NonNull final BluetoothGatt gatt) {
-                final List<BluetoothGattService> services = gatt.getServices();
-                servicesSubject.onNext(services);
-                return true;
-            }
+            // Always return true to prevent auto-disconnect.
+            // We will handle characteristic availability gracefully in initialize().
+            return true;
+        }
 
-            @Override
-            protected void onServicesInvalidated() {
-                Log.w(TAG, "Services Invalidated");
-                servicesSubject.onNext(List.of());
+        @Override
+        protected void initialize() {
+            for (Characteristic characteristic : SUPPORTED_CHARACTERISTICS.values()) {
+                if (characteristic.notificationCallback == null) continue;
+                if (characteristic.gattCharacteristic == null) {
+                    log(Log.WARN, "Characteristic " + characteristic.uuid + " not found on device. Skipping initialization.");
+                    continue;
+                }
+
+                setNotificationCallback(characteristic.gattCharacteristic)
+                    .with((device, data) -> characteristic.notificationCallback.accept(data));
+
+                beginAtomicRequestQueue()
+                    .add(enableNotifications(characteristic.gattCharacteristic)
+                            .fail((device, status) -> log(Log.ERROR, "Could not enable notifications for " + characteristic.uuid + ": " + status))
+                    )
+                    .enqueue();
             }
+        }
+
+        @Override
+        protected void onServicesInvalidated() {
+            Log.w(TAG, "Services Invalidated");
+            for (Characteristic characteristic : SUPPORTED_CHARACTERISTICS.values()) {
+                characteristic.gattCharacteristic = null;
+            }
+            servicesSubject.onNext(List.of());
         }
     }
 }

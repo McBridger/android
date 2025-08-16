@@ -8,6 +8,16 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
+    <Switch
+        android:id="@+id/masterSyncSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Master Sync On/Off"
+        android:checked="true"
+        android:layout_gravity="end"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp" />
+
     <!-- 1. Top app bar (Toolbar) -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"

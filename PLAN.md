@@ -68,24 +68,24 @@ The project relies on the following libraries from Nordic Semiconductor for robu
 -   [x] **Device Explorer Logic:** If the `Bridger Sync Service` is found, make the "Go to Sync Panel" button visible.
 
 ### Phase 2: The Sync Panel (`ConnectionActivity`)
--   [ ] **Create Files:** Create `ConnectionActivity.java`, `ConnectionViewModel.java`, and `activity_connection.xml`.
--   [ ] **Register Activity:** Add `ConnectionActivity` to the `AndroidManifest.xml`.
--   [ ] **Sync Panel UI:** Design `activity_connection.xml` with a status `TextView`, a "Shutdown Sync" button, and a `RecyclerView` for history.
--   [ ] **Sync Panel UI:** The UI must react to connection and error states from the `BleConnectionManager` (e.g., show "Reconnecting...").
--   [ ] **Sync Panel Logic:** Create a `ClipboardHistoryAdapter` for the `RecyclerView`.
--   [ ] **Sync Panel Logic:** In `ConnectionViewModel`, implement the core sync logic:
-    -   [ ] Subscribe to notifications on the `MAC_TO_ANDROID_CHARACTERISTIC`. Use the Nordic library's `merge()` operator to handle large data.
-    -   [ ] On notification, update the Android clipboard and add the text to the history list. Ensure this UI update happens on the main thread (`AndroidSchedulers.mainThread()`).
-    -   [ ] Create a `sendClipboard(text)` method that writes to the `ANDROID_TO_MAC_CHARACTERISTIC`. Use the Nordic library's `split()` operator to handle large data.
+-   [x] **Create Files:** Create `ConnectionActivity.java`, `ConnectionViewModel.java`, and `activity_connection.xml`.
+-   [x] **Register Activity:** Add `ConnectionActivity` to the `AndroidManifest.xml`.
+-   [x] **Sync Panel UI:** Design `activity_connection.xml` with a status `TextView`, a "Shutdown Sync" button, and a `RecyclerView` for history.
+-   [x] **Sync Panel UI:** The UI must react to connection and error states from the `BleConnectionManager` (e.g., show "Reconnecting...").
+-   [x] **Sync Panel Logic:** Create a `ClipboardHistoryAdapter` for the `RecyclerView`.
+-   [x] **Sync Panel Logic:** In `ConnectionViewModel`, implement the core sync logic:
+    -   [x] Subscribe to notifications on the `MAC_TO_ANDROID_CHARACTERISTIC`. Use the Nordic library's `merge()` operator to handle large data.
+    -   [x] On notification, update the Android clipboard and add the text to the history list. Ensure this UI update happens on the main thread (`AndroidSchedulers.mainThread()`).
+    -   [x] Create a `sendClipboard(text)` method that writes to the `ANDROID_TO_MAC_CHARACTERISTIC`. Use the Nordic library's `split()` operator to handle large data.
 
 ### Phase 3: Foreground Service & Notification
--   [ ] **Create Service:** Create a `ClipboardSyncService.java`.
--   [ ] **Register Service:** Add `ClipboardSyncService` to the `AndroidManifest.xml`.
--   [ ] **Service/Activity Communication:** Set up a `LocalBroadcastManager` for the notification to communicate with the `ConnectionActivity`.
--   [ ] **Notification Logic:** Implement the logic to create and display the persistent notification.
-    -   [ ] The main tap action (`contentIntent`) should send a local broadcast to trigger the `sendClipboard` method.
-    -   [ ] The "Off" action button should stop the service.
--   [ ] **Service Lifecycle:** The `ConnectionActivity` will be responsible for starting and stopping the `ClipboardSyncService`.
+-   [x] **Create Service:** Create a `ClipboardSyncService.java`.
+-   [x] **Register Service:** Add `ClipboardSyncService` to the `AndroidManifest.xml`.
+-   [x] **Service/Activity Communication:** Set up a `LocalBroadcastManager` for the notification to communicate with the `ConnectionActivity`.
+-   [x] **Notification Logic:** Implement the logic to create and display the persistent notification.
+    -   [x] The main tap action (`contentIntent`) should send a local broadcast to trigger the `sendClipboard` method.
+    -   [x] The "Off" action button should stop the service.
+-   [x] **Service Lifecycle:** The `ConnectionActivity` will be responsible for starting and stopping the `ClipboardSyncService`.
 
 ### Phase 4: Final UI Integration
--   [ ] **Main Activity UI:** Add a `Switch` or `ToggleButton` to `activity_main.xml` for master on/off control (can be a later task).
+-   [x] **Main Activity UI:** Add a `Switch` or `ToggleButton` to `activity_main.xml` for master on/off control (can be a later task).

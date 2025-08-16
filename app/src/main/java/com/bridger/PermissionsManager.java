@@ -3,6 +3,7 @@ package com.bridger;
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -46,6 +47,12 @@ public class PermissionsManager {
       }
       if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
         permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION);
+      }
+      // For Android 13 (API 33) and above, POST_NOTIFICATIONS is a runtime permission
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+          permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
       }
 
       if (permissionsToRequest.isEmpty()) {

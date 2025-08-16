@@ -42,3 +42,32 @@
     - **Navigation Fixes:** Corrected navigation from `MainActivity` to `DeviceActivity` to pass the `ScanResult` object as an `EXTRA_SCAN_RESULT`.
     - **API Alignment:** Corrected `DeviceViewModel` and `DeviceActivity`'s interactions with `BleConnectionManager`'s API, including using the correct `ConnectionState` enum, method names (`getConnectionState()`, `getDiscoveredServices()`), and argument types (`BluetoothDevice` for `connect()`, no arguments for `disconnect()`).
     - **Cleanup:** Removed the prematurely created `activity_connection.xml` file.
+
+## 8
+- **Sync Panel Implementation:**
+    - Created and configured the core components for the sync panel: `ConnectionActivity`, `ConnectionViewModel`, and `activity_connection.xml`.
+    - Implemented the UI, including a clipboard history `RecyclerView`, and connected it to the `ConnectionViewModel` to display connection status, errors, and sync history.
+    - Integrated logic to handle large data transfers using the Nordic BLE library's `split()` and `merge()` operators.
+    - Added a master `Switch` to `activity_main.xml` for global sync control.
+
+## 9
+- **Foreground Service & Event-Driven Architecture:**
+    - Created `ClipboardSyncService` to manage the clipboard sync process in the background, complete with a persistent notification for user control.
+    - Implemented "Tap to Sync" and "Off" actions in the notification.
+    - Re-architected the communication between components by introducing a central, RxJava-based event bus (`PublishSubject<ClipboardEvent>`). This decoupled the `ConnectionViewModel` and `ClipboardSyncService` from each other and from the `BleConnectionManager`, replacing an initial `LocalBroadcastManager` implementation with a more robust, reactive pattern.
+
+## 10
+- **Core BLE Refactoring & Bug Fixes:**
+    - Performed a major refactoring of `BleConnectionManager` to align with modern Nordic BLE library practices, resolving numerous deprecation warnings and compilation errors.
+    - Re-architected internal characteristic operations for improved reliability and efficiency, ensuring characteristics are discovered once and reused.
+    - Centralized notification setup within the connection initialization process.
+    - Corrected various bugs related to data serialization, logging, and component initialization.
+
+## 11
+- **Comprehensive Bug Fixes & Architectural Enhancements:**
+    - **`BleConnectionManager` Refinement**: Finalized the refactoring to use a declarative, map-based `Characteristic` model, ensuring clean and extensible characteristic management. Corrected public API method names and resolved `writeCharacteristic` deprecation.
+    - **Clipboard Access Solution**: Implemented an interactive, dialog-themed `ClipboardHandlerActivity` to reliably gain focus and resolve "Denying clipboard access" errors for background clipboard operations.
+    - **Permission Management**: Added all required foreground service permissions (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `POST_NOTIFICATIONS`) to `AndroidManifest.xml` and updated `PermissionsManager.java` for runtime handling.
+    - **Notification Fixes**: Resolved the "non-clickable notification" issue in `ClipboardSyncService`.
+    - **Navigation Correction**: Fixed the "Go to Sync Panel" button in `DeviceActivity` to correctly navigate to `ConnectionActivity`.
+    - **UUID Updates**: Ensured `Constants.java` contains the correct UUIDs for the Bridger service.
