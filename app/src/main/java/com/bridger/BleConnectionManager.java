@@ -77,13 +77,14 @@ public class BleConnectionManager {
                 .flatMapCompletable(text -> {
                     if (text != null) {
                         Data data = new Data(text.getBytes());
-                        return bleManager.performWriteCharacteristic(data);
+                        return bleManager.performWriteCharacteristic(data)
+                                .doOnComplete(() -> store.updateLastAction("Sent: " + text)); // Update last action on success
                     }
                     return Completable.complete(); // No text to send
                 })
                 .subscribeOn(Schedulers.io())
                 .subscribe(
-                        () -> Log.d(TAG, "Clipboard data sent via Store subscription"),
+                        () -> Log.d(TAG, "Clipboard data sent via Store subscription and last action updated."),
                         throwable -> Log.e(TAG, "Failed to send clipboard data: " + throwable.getMessage())
                 ));
 

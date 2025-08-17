@@ -126,7 +126,9 @@ The project relies on the following libraries from Nordic Semiconductor for robu
     -   `ServiceListAdapter.java`
     -   `activity_device.xml`
     -   `list_item_service.xml`
--   [ ] **Ensure notification persistency**
+-   [x] **Ensure notification persistency**
+    -   [x] **Move `NotificationContent` to `model` package:** Moved the `NotificationContent` helper class from `NotificationService.java` to `app/src/main/java/com/bridger/model/NotificationContent.java` for better code organization.
+    -   [x] **Fix Notification `lastAction` Update:** Modified `BleConnectionManager.java` to update the `Store`'s `lastAction` with the actual clipboard content after a successful BLE write operation, ensuring the notification displays relevant information.
 
 ### Phase 8: Connection Stability (Leveraging the Store)
 -   [ ] **Auto-Reconnect Logic:**

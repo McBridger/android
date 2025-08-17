@@ -87,3 +87,11 @@
         - Modified `NotificationService.java` to attach the `deleteIntent` to the notification builder, using a unique request code and `FLAG_UPDATE_CURRENT`.
     - Moved `startForeground` call from `onCreate` to `onStartCommand` in `NotificationService.java` to ensure notification re-display on service restart.
     - Ensured notification title reflects current connection state (e.g., "Connected", "Disconnected") with proper formatting (not all caps) when re-appearing.
+- **Notification Service Refactoring**:
+    - Consolidated RxJava streams for connection state and last action into a single `Observable.combineLatest` for unified notification updates.
+    - Removed redundant "Tap to Sync" action button from the notification.
+    - Assigned unique, constant-based request codes to `PendingIntent`s for improved safety and clarity.
+- **Code Structure Improvement**:
+    - Moved `NotificationContent` helper class from `NotificationService.java` to its own file (`NotificationContent.java`) in the `model` package for better organization and separation of concerns.
+- **Notification `lastAction` Fix**:
+    - Modified `BleConnectionManager.java` to update the `Store`'s `lastAction` with the actual clipboard content after a successful BLE write operation, ensuring the notification displays relevant information.

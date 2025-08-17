@@ -18,6 +18,7 @@ import com.bridger.ui.scanner.DeviceListAdapter;
 import com.bridger.ui.scanner.ScannerViewModel;
 import com.bridger.services.NotificationService; // Import NotificationService
 import android.content.Intent; // Import Intent
+import androidx.core.content.ContextCompat; // Import ContextCompat
 
 public class MainActivity extends AppCompatActivity {
 
@@ -44,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Start the NotificationService
     Intent serviceIntent = new Intent(this, NotificationService.class);
-    startService(serviceIntent);
+    ContextCompat.startForegroundService(this, serviceIntent);
 
     deviceListAdapter = new DeviceListAdapter(this); // Pass context here
     binding.deviceListView.setLayoutManager(new LinearLayoutManager(this));
