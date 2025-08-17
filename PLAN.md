@@ -95,24 +95,73 @@ The project relies on the following libraries from Nordic Semiconductor for robu
     -   [x] Implement a `ClipboardHandlerActivity` with a transparent theme (`@android:style/Theme.Translucent.NoTitleBar`).
     -   [x] The activity's sole purpose is to gain foreground access to read the clipboard.
     -   [x] In its `onCreate` or `onResume`, it will read the clipboard content and then immediately call `finish()` to close itself, minimizing any visual interruption.
--   [ ] **Auto-Reconnect Logic:** Implement a robust auto-reconnect strategy within `BleConnectionManager` using RxJava's `retryWhen` or similar operators to handle unexpected disconnections.
+
+### Phase 6: State Management & Service Refactoring
+-   [ ] **6.1: Implement Central State Store (`Store.java`)**
+    -   [ ] Create `Store.java` as a Singleton to act as the single source of truth.
+    -   [ ] Add `BehaviorSubject<ConnectionState>` for the global connection status.
+    -   [ ] Add `BehaviorSubject<String>` for the last synced action or text.
+    -   [ ] Add `PublishSubject<ClipboardEvent>` to handle all user and system-initiated events.
+-   [ ] **6.2: Create Notification Service & Logic Manager**
+    -   [ ] Create a new `services` directory: `app/src/main/java/com/bridger/services/`.
+    -   [ ] Create `NotificationService.java` as a dedicated foreground service. Its sole responsibility is to observe the `Store` and render the persistent notification, ensuring it always reflects the current app state.
+    -   [ ] Create `ClipboardManager.java` as a non-service Singleton. Its sole responsibility is to handle the business logic of clipboard synchronization by observing and reacting to events from the `Store`.
+    -   [ ] Remove the old `ClipboardSyncService.java` file and its registration in `AndroidManifest.xml`.
+-   [ ] **6.3: Refactor Core Components to Use Store**
+    -   [ ] Modify `MainActivity` to start the `NotificationService` on app launch, ensuring the notification is always present.
+    -   [ ] Refactor `BleConnectionManager` to push all state changes (connection, disconnection, errors) to the `Store` and subscribe to events (e.g., `SEND_CLIPBOARD`) from the `Store`.
+    -   [ ] Refactor all `ViewModels` (`ConnectionViewModel`, `DeviceViewModel`, etc.) to be stateless observers that source all their data directly from the `Store`.
+
+### Phase 7: Streamline Navigation & Remove Redundancy
+-   [ ] **Update Core Architecture:** Change the app's core flow from "Discover, Explore, Sync" to a more direct "Discover, Sync" model.
+-   [ ] **Update Navigation Logic:**
+    -   [ ] In `MainActivity`'s `DeviceListAdapter`, modify the `onClick` handler to start `ConnectionActivity` directly.
+    -   [ ] Use an `Intent` extra to pass the selected device's address (a `String`) to `ConnectionActivity`. This is the standard Android practice for passing initial data.
+-   [ ] **Initiate Connection via Store:**
+    -   [ ] In `ConnectionActivity`'s `onCreate` method, retrieve the device address from the `Intent`.
+    -   [ ] Immediately dispatch a `connect` action to the `Store` with the retrieved address. From this point forward, the `Store` will manage the entire connection state.
+-   [ ] **Remove Redundant Components:** Delete the following files and remove any corresponding entries from `AndroidManifest.xml`:
+    -   `DeviceActivity.java`
+    -   `DeviceViewModel.java`
+    -   `ServiceListAdapter.java`
+    -   `activity_device.xml`
+    -   `list_item_service.xml`
+
+### Phase 8: Connection Stability (Leveraging the Store)
+-   [ ] **Auto-Reconnect Logic:**
+    -   [ ] Implement the auto-reconnect strategy (e.g., using `retryWhen`) within `BleConnectionManager`.
+    -   [ ] Ensure that all intermediate states (`DISCONNECTED`, `CONNECTING`, etc.) during the reconnect attempts are published to the `Store`, so the entire app UI can react seamlessly.
 -   [ ] **Connection Persistence:**
-    -   [ ] On successful connection to a device that supports the `Bridger Sync Service`, save the device's MAC address to `SharedPreferences`.
-    -   [ ] On app startup, check `SharedPreferences` for a saved address. If one exists, attempt to connect directly, bypassing the scanner screen and navigating straight to `ConnectionActivity`.
+    -   [ ] On a successful connection event from the `Store`, save the device's MAC address to `SharedPreferences`.
+    -   [ ] On app startup (`MainActivity`), check `SharedPreferences` for a saved address.
+    -   [ ] If an address exists, dispatch a `connect` action to the `Store` immediately and navigate to `ConnectionActivity`, allowing the user to bypass the scanner and see the connection process in a unified way.
 
-### Phase 6: Code Refactoring
+### Phase 9: Dependency Injection with Hilt
+-   [ ] **Setup Hilt:**
+    -   [ ] Add Hilt dependencies to the `build.gradle` files.
+    -   [ ] Create a custom `Application` class and annotate it with `@HiltAndroidApp`.
+-   [ ] **Provide Dependencies:**
+    -   [ ] Create a Hilt module (e.g., `AppModule`) to provide singleton instances of the `Store`, `BleConnectionManager`, and `ClipboardManager`.
+-   [ ] **Inject Dependencies:**
+    -   [ ] Refactor all Activities, Services, and ViewModels to receive their dependencies via `@Inject` in their constructors or fields, removing all manual singleton access (`.getInstance()`).
+
+### Phase 10: Code Refactoring
 -   [ ] **Refactor `BleConnectionManager` for Unified Characteristic Handling:**
-    1.  [ ] **Unified Callback Model:** Modify the `Characteristic` model to hold separate functional interfaces for read and write operations. For example:
-        *   `notificationCallback` (`Consumer<Data>`) for handling incoming data from notifications.
-        *   `writeCallback` (`BiConsumer<BleManager, Data>`) for executing write operations, passing in the `BleManager` instance and the data to send.
-    2.  [ ] **Declarative Map:** Update the `SUPPORTED_CHARACTERISTICS` map. The `MAC_TO_ANDROID` characteristic will define its `notificationCallback`. The `ANDROID_TO_MAC` characteristic will define its `writeCallback`, encapsulating the logic to perform the write.
-    3.  [ ] **Generic `write` Method:** Create a single, generic public method, e.g., `writeToCharacteristic(UUID, Data)`, that looks up the characteristic in the map, retrieves its `writeCallback`, and executes it with the `BleManager` instance and data. This will replace the hardcoded `performWriteCharacteristic` method.
+    1.  [ ] **Unified Callback Model:** Modify the `Characteristic` model to hold separate functional interfaces for read and write operations.
+    2.  [ ] **Declarative Map:** Update the `SUPPORTED_CHARACTERISTICS` map to use the new callback model.
+    3.  [ ] **Generic `write` Method:** Create a single, generic public `writeToCharacteristic(UUID, Data)` method.
 
-### Phase 7: Testing
--   [ ] **Unit Tests:** Add unit tests
+### Phase 11: Testing
+-   [ ] **Unit Tests:** Add unit tests, leveraging Hilt for easy dependency mocking.
 -   [ ] **Integration Tests:** Add integration tests for the clipboard sync flow.
 
-### Phase 8: UI/UX Overhaul
+### Phase 12: UI/UX Overhaul
 -   [ ] **Design System:** Establish a consistent design system (colors, typography, spacing).
--   [ ] **Layout Redesign:** Redesign the layouts for all activities (`MainActivity`, `DeviceActivity`, `ConnectionActivity`) for better visual appeal and usability.
+-   [ ] **Layout Redesign:** Redesign the layouts for all activities (`MainActivity`, `ConnectionActivity`) for better visual appeal and usability.
 -   [ ] **User Feedback:** Incorporate better user feedback mechanisms (e.g., more descriptive connection status messages, loading indicators).
+
+### Phase 13: Future Modernization (Kotlin Migration)
+-   [ ] **Progressive Kotlin Migration:**
+    -   [ ] Enable Kotlin in the project.
+    -   [ ] Begin migrating existing Java classes to Kotlin, starting with data/model classes and moving towards UI and business logic.
+    -   [ ] Explore replacing RxJava with Kotlin Coroutines and Flow for asynchronous operations in new features.
