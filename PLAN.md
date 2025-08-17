@@ -89,3 +89,30 @@ The project relies on the following libraries from Nordic Semiconductor for robu
 
 ### Phase 4: Final UI Integration
 -   [x] **Main Activity UI:** Add a `Switch` or `ToggleButton` to `activity_main.xml` for master on/off control (can be a later task).
+
+### Phase 5: Stability & Seamlessness
+-   [x] **Robust Transparent Activity for Clipboard Access:**
+    -   [x] Implement a `ClipboardHandlerActivity` with a transparent theme (`@android:style/Theme.Translucent.NoTitleBar`).
+    -   [x] The activity's sole purpose is to gain foreground access to read the clipboard.
+    -   [x] In its `onCreate` or `onResume`, it will read the clipboard content and then immediately call `finish()` to close itself, minimizing any visual interruption.
+-   [ ] **Auto-Reconnect Logic:** Implement a robust auto-reconnect strategy within `BleConnectionManager` using RxJava's `retryWhen` or similar operators to handle unexpected disconnections.
+-   [ ] **Connection Persistence:**
+    -   [ ] On successful connection to a device that supports the `Bridger Sync Service`, save the device's MAC address to `SharedPreferences`.
+    -   [ ] On app startup, check `SharedPreferences` for a saved address. If one exists, attempt to connect directly, bypassing the scanner screen and navigating straight to `ConnectionActivity`.
+
+### Phase 6: Code Refactoring
+-   [ ] **Refactor `BleConnectionManager` for Unified Characteristic Handling:**
+    1.  [ ] **Unified Callback Model:** Modify the `Characteristic` model to hold separate functional interfaces for read and write operations. For example:
+        *   `notificationCallback` (`Consumer<Data>`) for handling incoming data from notifications.
+        *   `writeCallback` (`BiConsumer<BleManager, Data>`) for executing write operations, passing in the `BleManager` instance and the data to send.
+    2.  [ ] **Declarative Map:** Update the `SUPPORTED_CHARACTERISTICS` map. The `MAC_TO_ANDROID` characteristic will define its `notificationCallback`. The `ANDROID_TO_MAC` characteristic will define its `writeCallback`, encapsulating the logic to perform the write.
+    3.  [ ] **Generic `write` Method:** Create a single, generic public method, e.g., `writeToCharacteristic(UUID, Data)`, that looks up the characteristic in the map, retrieves its `writeCallback`, and executes it with the `BleManager` instance and data. This will replace the hardcoded `performWriteCharacteristic` method.
+
+### Phase 7: Testing
+-   [ ] **Unit Tests:** Add unit tests
+-   [ ] **Integration Tests:** Add integration tests for the clipboard sync flow.
+
+### Phase 8: UI/UX Overhaul
+-   [ ] **Design System:** Establish a consistent design system (colors, typography, spacing).
+-   [ ] **Layout Redesign:** Redesign the layouts for all activities (`MainActivity`, `DeviceActivity`, `ConnectionActivity`) for better visual appeal and usability.
+-   [ ] **User Feedback:** Incorporate better user feedback mechanisms (e.g., more descriptive connection status messages, loading indicators).

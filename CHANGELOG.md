@@ -64,10 +64,6 @@
     - Corrected various bugs related to data serialization, logging, and component initialization.
 
 ## 11
-- **Comprehensive Bug Fixes & Architectural Enhancements:**
-    - **`BleConnectionManager` Refinement**: Finalized the refactoring to use a declarative, map-based `Characteristic` model, ensuring clean and extensible characteristic management. Corrected public API method names and resolved `writeCharacteristic` deprecation.
-    - **Clipboard Access Solution**: Implemented an interactive, dialog-themed `ClipboardHandlerActivity` to reliably gain focus and resolve "Denying clipboard access" errors for background clipboard operations.
-    - **Permission Management**: Added all required foreground service permissions (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `POST_NOTIFICATIONS`) to `AndroidManifest.xml` and updated `PermissionsManager.java` for runtime handling.
-    - **Notification Fixes**: Resolved the "non-clickable notification" issue in `ClipboardSyncService`.
-    - **Navigation Correction**: Fixed the "Go to Sync Panel" button in `DeviceActivity` to correctly navigate to `ConnectionActivity`.
-    - **UUID Updates**: Ensured `Constants.java` contains the correct UUIDs for the Bridger service.
+- **Consolidated Stability & Feature Enhancements**:
+    - **Clipboard Access Refinement**: `ClipboardHandlerActivity` was significantly improved to provide robust and transparent clipboard access. Initially designed as an interactive dialog, it was refactored to be a fully transparent activity (`@android:style/Theme.Translucent.NoTitleBar`) that automatically reads clipboard content upon gaining focus (`onWindowFocusChanged`) and immediately finishes, minimizing visual interruption. Detailed logging was added for debugging, and its associated layout file (`activity_clipboard_handler.xml`) was removed. A duplicate entry for this activity in `AndroidManifest.xml` was also corrected.
+    - **Permission & Notification Management**: All required foreground service permissions (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `POST_NOTIFICATIONS`) were added to `AndroidManifest.xml`, and `PermissionsManager.java` was updated for runtime handling. The "non-clickable notification" issue in `ClipboardSyncService` was resolved.

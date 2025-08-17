@@ -37,15 +37,15 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.device.DeviceActivity"
-            android:exported="false" />
+            android:name=".ClipboardHandlerActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <activity
             android:name=".ui.connection.ConnectionActivity"
             android:exported="false" />
         <activity
-            android:name=".ClipboardHandlerActivity"
-            android:exported="false"
-            android:theme="@android:style/Theme.Dialog" />
+            android:name=".ui.device.DeviceActivity"
+            android:exported="false" />
 
         <service
             android:name=".ClipboardSyncService"
