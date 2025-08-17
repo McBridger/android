@@ -4,17 +4,19 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import com.bridger.databinding.ActivityConnectionBinding;
-import com.bridger.BleConnectionManager;
+import com.bridger.Store; // Import the Store
+import com.bridger.events.ClipboardEvent; // Import ClipboardEvent
 import androidx.recyclerview.widget.LinearLayoutManager;
 import android.content.Intent;
-import android.os.Build;
-import com.bridger.ClipboardSyncService;
+import com.bridger.ui.scanner.DeviceListAdapter; // Import DeviceListAdapter for EXTRA_DEVICE_ADDRESS
+import android.util.Log; // Import Log
 
 public class ConnectionActivity extends AppCompatActivity {
 
     private ActivityConnectionBinding binding;
     private ConnectionViewModel viewModel;
     private ClipboardHistoryAdapter historyAdapter;
+    private Store store; // Reference to the Store
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,27 +24,43 @@ public class ConnectionActivity extends AppCompatActivity {
         binding = ActivityConnectionBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        store = Store.getInstance(); // Get the Store instance
+
         viewModel = new ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory.getInstance(getApplication()))
                 .get(ConnectionViewModel.class);
 
         setupUI();
         observeViewModel();
 
-        // Start the ClipboardSyncService
-        startClipboardSyncService();
+        // Get device address from Intent and initiate connection via Store
+        Intent intent = getIntent();
+        if (intent != null && intent.hasExtra(DeviceListAdapter.EXTRA_DEVICE_ADDRESS)) {
+            String deviceAddress = intent.getStringExtra(DeviceListAdapter.EXTRA_DEVICE_ADDRESS);
+            if (deviceAddress != null) {
+                Log.d("ConnectionActivity", "Attempting to connect to device: " + deviceAddress);
+                store.dispatchClipboardEvent(ClipboardEvent.createConnectEvent(deviceAddress));
+            } else {
+                Log.e("ConnectionActivity", "Device address is null.");
+                store.updateLastAction("Error: Device address missing.");
+            }
+        } else {
+            Log.w("ConnectionActivity", "No device address passed via Intent. Assuming manual connection or persistence.");
+            // In a future phase, we'll handle auto-reconnect/persistence here.
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Stop the ClipboardSyncService when activity is destroyed
-        stopClipboardSyncService();
+        // No need to stop ClipboardSyncService here, as it's replaced by NotificationService
+        // and ClipboardUtility, which manage their own lifecycles or are singletons.
     }
 
     private void setupUI() {
         binding.shutdownSyncButton.setOnClickListener(v -> {
-            BleConnectionManager.getInstance(getApplicationContext()).disconnect();
-            stopClipboardSyncService();
+            // Dispatch a disconnect request to the Store
+            store.dispatchClipboardEvent(ClipboardEvent.DISCONNECT_REQUESTED);
+            Log.d("ConnectionActivity", "Disconnect requested via Store.");
         });
 
         historyAdapter = new ClipboardHistoryAdapter();
@@ -69,7 +87,9 @@ public class ConnectionActivity extends AppCompatActivity {
                 case READY:
                     statusText = "Connection Status: Ready for Sync!";
                     break;
-                case INITIALIZING:
+                case FAILED: // Handle FAILED state explicitly
+                    statusText = "Connection Status: Failed!";
+                    break;
                 default:
                     statusText = "Connection Status: Initializing...";
                     break;
@@ -77,9 +97,12 @@ public class ConnectionActivity extends AppCompatActivity {
             binding.statusTextView.setText(statusText);
         });
 
-        viewModel.getErrorMessage().observe(this, errorMessage -> {
-            if (errorMessage != null && !errorMessage.isEmpty()) {
-                binding.statusTextView.setText("Error: " + errorMessage);
+        // Observe last action from ViewModel (which gets it from Store)
+        viewModel.getLastAction().observe(this, lastAction -> {
+            if (lastAction != null && !lastAction.isEmpty()) {
+                // Update a separate text view or combine with status if desired
+                // For now, we'll just log and let the history adapter show it.
+                Log.d("ConnectionActivity", "Last action: " + lastAction);
             }
         });
 
@@ -89,19 +112,5 @@ public class ConnectionActivity extends AppCompatActivity {
                 binding.clipboardHistoryRecyclerView.scrollToPosition(0);
             }
         });
-    }
-
-    private void startClipboardSyncService() {
-        Intent serviceIntent = new Intent(this, ClipboardSyncService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent);
-        } else {
-            startService(serviceIntent);
-        }
-    }
-
-    private void stopClipboardSyncService() {
-        Intent serviceIntent = new Intent(this, ClipboardSyncService.class);
-        stopService(serviceIntent);
     }
 }

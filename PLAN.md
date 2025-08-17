@@ -97,35 +97,36 @@ The project relies on the following libraries from Nordic Semiconductor for robu
     -   [x] In its `onCreate` or `onResume`, it will read the clipboard content and then immediately call `finish()` to close itself, minimizing any visual interruption.
 
 ### Phase 6: State Management & Service Refactoring
--   [ ] **6.1: Implement Central State Store (`Store.java`)**
-    -   [ ] Create `Store.java` as a Singleton to act as the single source of truth.
-    -   [ ] Add `BehaviorSubject<ConnectionState>` for the global connection status.
-    -   [ ] Add `BehaviorSubject<String>` for the last synced action or text.
-    -   [ ] Add `PublishSubject<ClipboardEvent>` to handle all user and system-initiated events.
--   [ ] **6.2: Create Notification Service & Logic Manager**
-    -   [ ] Create a new `services` directory: `app/src/main/java/com/bridger/services/`.
-    -   [ ] Create `NotificationService.java` as a dedicated foreground service. Its sole responsibility is to observe the `Store` and render the persistent notification, ensuring it always reflects the current app state.
-    -   [ ] Create `ClipboardManager.java` as a non-service Singleton. Its sole responsibility is to handle the business logic of clipboard synchronization by observing and reacting to events from the `Store`.
-    -   [ ] Remove the old `ClipboardSyncService.java` file and its registration in `AndroidManifest.xml`.
--   [ ] **6.3: Refactor Core Components to Use Store**
-    -   [ ] Modify `MainActivity` to start the `NotificationService` on app launch, ensuring the notification is always present.
-    -   [ ] Refactor `BleConnectionManager` to push all state changes (connection, disconnection, errors) to the `Store` and subscribe to events (e.g., `SEND_CLIPBOARD`) from the `Store`.
-    -   [ ] Refactor all `ViewModels` (`ConnectionViewModel`, `DeviceViewModel`, etc.) to be stateless observers that source all their data directly from the `Store`.
+-   [x] **6.1: Implement Central State Store (`Store.java`)**
+    -   [x] Create `Store.java` as a Singleton to act as the single source of truth.
+    -   [x] Add `BehaviorSubject<ConnectionState>` for the global connection status.
+    -   [x] Add `BehaviorSubject<String>` for the last synced action or text.
+    -   [x] Add `PublishSubject<ClipboardEvent>` to handle all user and system-initiated events.
+-   [x] **6.2: Create Notification Service & Logic Manager**
+    -   [x] Create a new `services` directory: `app/src/main/java/com/bridger/services/`.
+    -   [x] Create `NotificationService.java` as a dedicated foreground service. Its sole responsibility is to observe the `Store` and render the persistent notification, ensuring it always reflects the current app state.
+    -   [x] Create `ClipboardManager.java` as a non-service Singleton. Its sole responsibility is to handle the business logic of clipboard synchronization by observing and reacting to events from the `Store`.
+    -   [x] Remove the old `ClipboardSyncService.java` file and its registration in `AndroidManifest.xml`.
+-   [x] **6.3: Refactor Core Components to Use Store**
+    -   [x] Modify `MainActivity` to start the `NotificationService` on app launch, ensuring the notification is always present.
+    -   [x] Refactor `BleConnectionManager` to push all state changes (connection, disconnection, errors) to the `Store` and subscribe to events (e.g., `SEND_CLIPBOARD`) from the `Store`.
+    -   [x] Refactor all `ViewModels` (`ConnectionViewModel`, `DeviceViewModel`, etc.) to be stateless observers that source all their data directly from the `Store`.
 
 ### Phase 7: Streamline Navigation & Remove Redundancy
--   [ ] **Update Core Architecture:** Change the app's core flow from "Discover, Explore, Sync" to a more direct "Discover, Sync" model.
--   [ ] **Update Navigation Logic:**
-    -   [ ] In `MainActivity`'s `DeviceListAdapter`, modify the `onClick` handler to start `ConnectionActivity` directly.
-    -   [ ] Use an `Intent` extra to pass the selected device's address (a `String`) to `ConnectionActivity`. This is the standard Android practice for passing initial data.
--   [ ] **Initiate Connection via Store:**
-    -   [ ] In `ConnectionActivity`'s `onCreate` method, retrieve the device address from the `Intent`.
-    -   [ ] Immediately dispatch a `connect` action to the `Store` with the retrieved address. From this point forward, the `Store` will manage the entire connection state.
--   [ ] **Remove Redundant Components:** Delete the following files and remove any corresponding entries from `AndroidManifest.xml`:
+-   [x] **Update Core Architecture:** Change the app's core flow from "Discover, Explore, Sync" to a more direct "Discover, Sync" model.
+-   [x] **Update Navigation Logic:**
+    -   [x] In `MainActivity`'s `DeviceListAdapter`, modify the `onClick` handler to start `ConnectionActivity` directly.
+    -   [x] Use an `Intent` extra to pass the selected device's address (a `String`) to `ConnectionActivity`. This is the standard Android practice for passing initial data.
+-   [x] **Initiate Connection via Store:**
+    -   [x] In `ConnectionActivity`'s `onCreate` method, retrieve the device address from the `Intent`.
+    -   [x] Immediately dispatch a `connect` action to the `Store` with the retrieved address. From this point forward, the `Store` will manage the entire connection state.
+-   [x] **Remove Redundant Components:** Delete the following files and remove any corresponding entries from `AndroidManifest.xml`:
     -   `DeviceActivity.java`
     -   `DeviceViewModel.java`
     -   `ServiceListAdapter.java`
     -   `activity_device.xml`
     -   `list_item_service.xml`
+-   [ ] **Ensure notification persistency**
 
 ### Phase 8: Connection Stability (Leveraging the Store)
 -   [ ] **Auto-Reconnect Logic:**

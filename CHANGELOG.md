@@ -67,3 +67,23 @@
 - **Consolidated Stability & Feature Enhancements**:
     - **Clipboard Access Refinement**: `ClipboardHandlerActivity` was significantly improved to provide robust and transparent clipboard access. Initially designed as an interactive dialog, it was refactored to be a fully transparent activity (`@android:style/Theme.Translucent.NoTitleBar`) that automatically reads clipboard content upon gaining focus (`onWindowFocusChanged`) and immediately finishes, minimizing visual interruption. Detailed logging was added for debugging, and its associated layout file (`activity_clipboard_handler.xml`) was removed. A duplicate entry for this activity in `AndroidManifest.xml` was also corrected.
     - **Permission & Notification Management**: All required foreground service permissions (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `POST_NOTIFICATIONS`) were added to `AndroidManifest.xml`, and `PermissionsManager.java` was updated for runtime handling. The "non-clickable notification" issue in `ClipboardSyncService` was resolved.
+
+## 12
+- **Reactive Architecture Implementation & Verification**:
+    - Verified `BleConnectionManager` correctly dispatches `RECEIVED` events.
+    - Verified `ClipboardUtility` is a pure utility.
+    - Modified `ClipboardEvent.java` to add `createSendRequestedEvent` for data-carrying `SEND_REQUESTED` events.
+    - Modified `ClipboardHandlerActivity.java` to dispatch `ClipboardEvent.createSendRequestedEvent` with clipboard data.
+    - Verified `ConnectionViewModel` subscribes to `RECEIVED` events and writes to clipboard.
+    - Refactored `ConnectionViewModel` to use separate, filtered RxJava subscriptions for `RECEIVED` and `SENT` events for cleaner code.
+    - Initialized `BleConnectionManager` in `MainActivity.java` to ensure it's active from app startup.
+- **Notification Persistence & Correctness Fixes**:
+    - Updated `AndroidManifest.xml` with `FOREGROUND_SERVICE_DATA_SYNC` permission and set `foregroundServiceType="dataSync"` for `NotificationService`.
+    - Modified `NotificationService.java` to use `startForeground` with `ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC` for modern Android.
+    - Corrected `NotificationService.java`'s `contentIntent` to directly launch `ClipboardHandlerActivity` from the main notification tap.
+    - Implemented "pseudo-persistent" notification using `deleteIntent`:
+        - Created `NotificationDismissedReceiver.java` to re-launch `NotificationService` after a delay upon notification dismissal.
+        - Registered `NotificationDismissedReceiver` in `AndroidManifest.xml` with a custom `intent-filter`.
+        - Modified `NotificationService.java` to attach the `deleteIntent` to the notification builder, using a unique request code and `FLAG_UPDATE_CURRENT`.
+    - Moved `startForeground` call from `onCreate` to `onStartCommand` in `NotificationService.java` to ensure notification re-display on service restart.
+    - Ensured notification title reflects current connection state (e.g., "Connected", "Disconnected") with proper formatting (not all caps) when re-appearing.

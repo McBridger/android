@@ -1,9 +1,6 @@
 package com.bridger.ui.connection;
 
 import android.app.Application;
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -11,8 +8,10 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import com.bridger.BleConnectionManager;
-import com.bridger.events.ClipboardEvent; // Import ClipboardEvent
+import com.bridger.ClipboardUtility; // Use our new ClipboardUtility
+import com.bridger.Store; // Import the Store
+import com.bridger.events.ClipboardEvent;
+import com.bridger.model.ConnectionState; // Import ConnectionState from model
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,85 +24,97 @@ public class ConnectionViewModel extends AndroidViewModel {
 
     private static final String TAG = "ConnectionViewModel";
 
-    private final BleConnectionManager bleConnectionManager;
+    private final Store store;
+    private final ClipboardUtility clipboardUtility; // Use our new ClipboardUtility
     private final CompositeDisposable disposables = new CompositeDisposable();
     private final MutableLiveData<List<String>> clipboardHistory = new MutableLiveData<>();
-    private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
-    private final MutableLiveData<BleConnectionManager.ConnectionState> connectionStateLiveData = new MutableLiveData<>();
-
 
     public ConnectionViewModel(@NonNull Application application) {
         super(application);
-        bleConnectionManager = BleConnectionManager.getInstance(application.getApplicationContext());
+        this.store = Store.getInstance(); // Get Store instance
+        this.clipboardUtility = ClipboardUtility.getInstance(application.getApplicationContext()); // Get ClipboardUtility instance
         clipboardHistory.setValue(new ArrayList<>());
-        observeBleConnectionState();
-        observeClipboardEvents(); // New method to observe clipboard events
+        observeStoreState(); // Observe state from Store
+        observeReceivedEvents(); // Observe RECEIVED events from Store
+        observeSentEvents(); // Observe SENT events from Store
     }
 
-    public LiveData<BleConnectionManager.ConnectionState> getConnectionState() {
-        return connectionStateLiveData;
+    // Expose LiveData from the Store's BehaviorSubjects
+    public LiveData<ConnectionState> getConnectionState() {
+        return new LiveData<>() {
+            @Override
+            protected void onActive() {
+                super.onActive();
+                disposables.add(store.getConnectionStateSubject()
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(this::setValue,
+                                throwable -> Log.e(TAG, "Error observing connection state from Store: " + throwable.getMessage())));
+            }
+
+            @Override
+            protected void onInactive() {
+                super.onInactive();
+                // Disposables are cleared in onCleared, so no need to clear here specifically for LiveData
+            }
+        };
     }
 
-    public LiveData<String> getErrorMessage() {
-        return errorMessage;
+    public LiveData<String> getLastAction() {
+        return new LiveData<>() {
+            @Override
+            protected void onActive() {
+                super.onActive();
+                disposables.add(store.getLastActionSubject()
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(this::setValue,
+                                throwable -> Log.e(TAG, "Error observing last action from Store: " + throwable.getMessage())));
+            }
+
+            @Override
+            protected void onInactive() {
+                super.onInactive();
+            }
+        };
     }
 
     public LiveData<List<String>> getClipboardHistory() {
         return clipboardHistory;
     }
 
-    private void observeBleConnectionState() {
-        disposables.add(bleConnectionManager.getConnectionState()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        connectionState -> {
-                            Log.d(TAG, "Connection state changed: " + connectionState);
-                            connectionStateLiveData.postValue(connectionState);
-                        },
-                        throwable -> {
-                            Log.e(TAG, "Error observing connection state", throwable);
-                            errorMessage.postValue("Connection error: " + throwable.getMessage());
-                        }
-                ));
+    private void observeStoreState() {
+        // No direct observation needed here for connectionState and lastAction, as LiveData wrappers handle it.
+        // This method can be used for other state observations if needed.
     }
 
-    private void observeClipboardEvents() {
-        disposables.add(bleConnectionManager.clipboardEvents
+    private void observeReceivedEvents() {
+        disposables.add(store.getClipboardEventSubject()
+                .filter(event -> event.getType() == ClipboardEvent.EventType.RECEIVED)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         event -> {
-                            if (event instanceof ClipboardEvent.Receive) {
-                                ClipboardEvent.Receive receiveEvent = (ClipboardEvent.Receive) event;
-                                Log.d(TAG, "Received clipboard event: " + receiveEvent.text);
-                                updateAndroidClipboard(receiveEvent.text);
-                                addTextToHistory("Received: " + receiveEvent.text);
-                            } else if (event instanceof ClipboardEvent.Send) {
-                                ClipboardEvent.Send sendEvent = (ClipboardEvent.Send) event;
-                                Log.d(TAG, "Sent clipboard event acknowledged: " + sendEvent.text);
-                                addTextToHistory("Sent: " + sendEvent.text);
-                            }
+                            Log.d(TAG, "Received clipboard event from Store: " + event.getData());
+                            clipboardUtility.writeToClipboard(event.getData()); // Write to system clipboard
+                            addTextToHistory("Received: " + event.getData());
                         },
-                        throwable -> {
-                            Log.e(TAG, "Error observing clipboard events", throwable);
-                            errorMessage.postValue("Clipboard event error: " + throwable.getMessage());
-                        }
+                        throwable -> Log.e(TAG, "Error observing RECEIVED clipboard events from Store: " + throwable.getMessage())
                 ));
     }
 
-    public void sendClipboard(String text) {
-        bleConnectionManager.clipboardEvents.onNext(new ClipboardEvent.Send(text));
-        Log.d(TAG, "Queued clipboard for sending: " + text);
-    }
-
-    private void updateAndroidClipboard(String text) {
-        ClipboardManager clipboard = (ClipboardManager) getApplication().getSystemService(Context.CLIPBOARD_SERVICE);
-        if (clipboard != null) {
-            ClipData clip = ClipData.newPlainText("Bridger Clipboard", text);
-            clipboard.setPrimaryClip(clip);
-            Log.d(TAG, "Android clipboard updated: " + text);
-        }
+    private void observeSentEvents() {
+        disposables.add(store.getClipboardEventSubject()
+                .filter(event -> event.getType() == ClipboardEvent.EventType.SENT)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        event -> {
+                            Log.d(TAG, "Sent clipboard event acknowledged by Store: " + event.getData());
+                            addTextToHistory("Sent: " + event.getData());
+                        },
+                        throwable -> Log.e(TAG, "Error observing SENT clipboard events from Store: " + throwable.getMessage())
+                ));
     }
 
     private void addTextToHistory(String text) {
@@ -119,5 +130,6 @@ public class ConnectionViewModel extends AndroidViewModel {
     protected void onCleared() {
         super.onCleared();
         disposables.clear();
+        // ClipboardUtility no longer has RxJava subscriptions to dispose of
     }
 }

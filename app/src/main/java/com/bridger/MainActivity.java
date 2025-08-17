@@ -16,6 +16,8 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import com.bridger.databinding.ActivityMainBinding;
 import com.bridger.ui.scanner.DeviceListAdapter;
 import com.bridger.ui.scanner.ScannerViewModel;
+import com.bridger.services.NotificationService; // Import NotificationService
+import android.content.Intent; // Import Intent
 
 public class MainActivity extends AppCompatActivity {
 
@@ -36,6 +38,13 @@ public class MainActivity extends AppCompatActivity {
 
     Toolbar toolbar = findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
+
+    // Initialize BleConnectionManager
+    BleConnectionManager.getInstance(getApplicationContext());
+
+    // Start the NotificationService
+    Intent serviceIntent = new Intent(this, NotificationService.class);
+    startService(serviceIntent);
 
     deviceListAdapter = new DeviceListAdapter(this); // Pass context here
     binding.deviceListView.setLayoutManager(new LinearLayoutManager(this));

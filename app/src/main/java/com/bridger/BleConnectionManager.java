@@ -1,5 +1,6 @@
 package com.bridger;
 
+import android.bluetooth.BluetoothAdapter; // Import BluetoothAdapter
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -10,23 +11,18 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 import com.bridger.constants.Constants;
 import com.bridger.events.ClipboardEvent;
 import com.bridger.model.Characteristic;
+import com.bridger.model.ConnectionState;
 
 import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import io.reactivex.rxjava3.subjects.BehaviorSubject;
-import io.reactivex.rxjava3.subjects.PublishSubject;
 import no.nordicsemi.android.ble.BleManager;
 import no.nordicsemi.android.ble.data.Data;
 import no.nordicsemi.android.ble.observer.ConnectionObserver;
@@ -37,27 +33,15 @@ public class BleConnectionManager {
     private static BleConnectionManager instance;
     private final BridgerBleManager bleManager;
     private final CompositeDisposable disposables = new CompositeDisposable();
+    private final Store store;
 
-    private final BehaviorSubject<ConnectionState> connectionStateSubject = BehaviorSubject.createDefault(ConnectionState.DISCONNECTED);
-    private final BehaviorSubject<List<BluetoothGattService>> servicesSubject = BehaviorSubject.create();
-    private final BehaviorSubject<Throwable> errorSubject = BehaviorSubject.create();
-    public final PublishSubject<ClipboardEvent> clipboardEvents = PublishSubject.create();
-
-    public enum ConnectionState {
-        DISCONNECTED,
-        CONNECTING,
-        CONNECTED,
-        DISCONNECTING,
-        READY,
-        INITIALIZING
-    }
-
-    private BleConnectionManager(@NonNull Context context) {
+    private BleConnectionManager(@NonNull Context context, @NonNull Store store) {
+        this.store = store;
         this.bleManager = new BridgerBleManager(context.getApplicationContext());
         bleManager.setConnectionObserver(new ConnectionObserver() {
             @Override
             public void onDeviceConnecting(@NonNull BluetoothDevice device) {
-                connectionStateSubject.onNext(ConnectionState.CONNECTING);
+                store.updateConnectionState(ConnectionState.CONNECTING);
             }
 
             @Override
@@ -67,62 +51,83 @@ public class BleConnectionManager {
 
             @Override
             public void onDeviceFailedToConnect(@NonNull BluetoothDevice device, int reason) {
-                connectionStateSubject.onNext(ConnectionState.DISCONNECTED);
-                errorSubject.onNext(new Throwable("Failed to connect with reason: " + reason));
+                store.updateConnectionState(ConnectionState.FAILED);
             }
 
             @Override
             public void onDeviceReady(@NonNull BluetoothDevice device) {
-                connectionStateSubject.onNext(ConnectionState.READY);
+                store.updateConnectionState(ConnectionState.CONNECTED);
             }
 
             @Override
             public void onDeviceDisconnecting(@NonNull BluetoothDevice device) {
-                connectionStateSubject.onNext(ConnectionState.DISCONNECTING);
+                store.updateConnectionState(ConnectionState.DISCONNECTING);
             }
 
             @Override
             public void onDeviceDisconnected(@NonNull BluetoothDevice device, int reason) {
-                connectionStateSubject.onNext(ConnectionState.DISCONNECTED);
-                servicesSubject.onNext(List.of());
+                store.updateConnectionState(ConnectionState.DISCONNECTED);
             }
         });
 
-        // Subscribe to clipboardEvents to handle outgoing clipboard data
-        disposables.add(clipboardEvents
-                .filter(event -> event instanceof ClipboardEvent.Send)
-                .cast(ClipboardEvent.Send.class)
-                .flatMapCompletable(sendEvent -> {
-                    Data data = new Data(sendEvent.text.getBytes());
-                    return bleManager.performWriteCharacteristic(data);
+        // Subscribe to clipboard events from the Store to handle outgoing data
+        disposables.add(store.getClipboardEventSubject()
+                .filter(event -> event.getType() == ClipboardEvent.EventType.SEND_REQUESTED)
+                .map(ClipboardEvent::getData) // Get text data from event
+                .flatMapCompletable(text -> {
+                    if (text != null) {
+                        Data data = new Data(text.getBytes());
+                        return bleManager.performWriteCharacteristic(data);
+                    }
+                    return Completable.complete(); // No text to send
                 })
                 .subscribeOn(Schedulers.io())
                 .subscribe(
-                        () -> Log.d(TAG, "Clipboard data sent via internal subscription"),
-                        throwable -> errorSubject.onNext(new Throwable("Failed to send clipboard data: " + throwable.getMessage()))
+                        () -> Log.d(TAG, "Clipboard data sent via Store subscription"),
+                        throwable -> Log.e(TAG, "Failed to send clipboard data: " + throwable.getMessage())
                 ));
+
+        // Subscribe to CONNECT_REQUESTED events from the Store to initiate connection
+        disposables.add(store.getClipboardEventSubject()
+                .filter(event -> event.getType() == ClipboardEvent.EventType.CONNECT_REQUESTED)
+                .map(ClipboardEvent::getData) // Get device address
+                .subscribeOn(Schedulers.io())
+                .subscribe(deviceAddress -> {
+                    if (deviceAddress != null) {
+                        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+                        if (bluetoothAdapter != null) {
+                            BluetoothDevice device = bluetoothAdapter.getRemoteDevice(deviceAddress);
+                            if (device != null) {
+                                connect(device); // Call the connect method
+                            } else {
+                                Log.e(TAG, "BluetoothDevice not found for address: " + deviceAddress);
+                                store.updateConnectionState(ConnectionState.FAILED);
+                            }
+                        } else {
+                            Log.e(TAG, "BluetoothAdapter not available.");
+                            store.updateConnectionState(ConnectionState.FAILED);
+                        }
+                    }
+                }, throwable -> Log.e(TAG, "Error observing CONNECT_REQUESTED: " + throwable.getMessage())));
+
+        // Subscribe to DISCONNECT_REQUESTED events from the Store
+        disposables.add(store.getClipboardEventSubject()
+                .filter(event -> event.getType() == ClipboardEvent.EventType.DISCONNECT_REQUESTED)
+                .subscribeOn(Schedulers.io())
+                .subscribe(event -> {
+                    Log.d(TAG, "Disconnect requested.");
+                    disconnect();
+                }, throwable -> Log.e(TAG, "Error observing DISCONNECT_REQUESTED: " + throwable.getMessage())));
     }
 
     public static synchronized BleConnectionManager getInstance(@NonNull Context context) {
         if (instance == null) {
-            instance = new BleConnectionManager(context.getApplicationContext());
+            instance = new BleConnectionManager(context.getApplicationContext(), Store.getInstance());
         }
         return instance;
     }
 
     // --- Public API ---
-
-    public Observable<ConnectionState> getConnectionState() {
-        return connectionStateSubject.hide();
-    }
-
-    public Observable<List<BluetoothGattService>> getDiscoveredServices() {
-        return servicesSubject.hide();
-    }
-
-    public Observable<Throwable> getErrors() {
-        return errorSubject.hide();
-    }
 
     @Nullable
     public BluetoothDevice getConnectedDevice() {
@@ -130,7 +135,8 @@ public class BleConnectionManager {
     }
 
     public void connect(@NonNull BluetoothDevice device) {
-        if (connectionStateSubject.getValue() == ConnectionState.CONNECTED || connectionStateSubject.getValue() == ConnectionState.CONNECTING) {
+        if (store.getConnectionStateSubject().getValue() == ConnectionState.CONNECTED ||
+            store.getConnectionStateSubject().getValue() == ConnectionState.CONNECTING) {
             Log.w(TAG, "Already connected or connecting to a device.");
             return;
         }
@@ -148,18 +154,14 @@ public class BleConnectionManager {
     // The inner class that extends BleManager and can access protected methods
     private class BridgerBleManager extends BleManager {
 
-        // Define all supported characteristics with their UUIDs and notification callbacks
         private final Map<UUID, Characteristic> SUPPORTED_CHARACTERISTICS = new HashMap<>();
 
         {
-            // Android to Mac Characteristic (Write)
             SUPPORTED_CHARACTERISTICS.put(Constants.ANDROID_TO_MAC_CHARACTERISTIC_UUID, new Characteristic(Constants.ANDROID_TO_MAC_CHARACTERISTIC_UUID));
-
-            // Mac to Android Characteristic (Notify) - Dummy callback for now, as requested
             SUPPORTED_CHARACTERISTICS.put(Constants.MAC_TO_ANDROID_CHARACTERISTIC_UUID, new Characteristic(Constants.MAC_TO_ANDROID_CHARACTERISTIC_UUID, data -> {
                 String value = data.getStringValue(0);
                 if (value == null) return;
-                clipboardEvents.onNext(new ClipboardEvent.Receive(value));
+                store.dispatchClipboardEvent(ClipboardEvent.createReceiveEvent(value));
             }));
         }
 
@@ -190,7 +192,6 @@ public class BleConnectionManager {
 
         @Override
         protected boolean isRequiredServiceSupported(@NonNull final BluetoothGatt gatt) {
-            servicesSubject.onNext(gatt.getServices());
             final BluetoothGattService service = gatt.getService(Constants.BRIDGER_SERVICE_UUID);
 
             if (service != null) {
@@ -202,8 +203,6 @@ public class BleConnectionManager {
                 }
             }
 
-            // Always return true to prevent auto-disconnect.
-            // We will handle characteristic availability gracefully in initialize().
             return true;
         }
 
@@ -233,7 +232,6 @@ public class BleConnectionManager {
             for (Characteristic characteristic : SUPPORTED_CHARACTERISTICS.values()) {
                 characteristic.gattCharacteristic = null;
             }
-            servicesSubject.onNext(List.of());
         }
     }
 }

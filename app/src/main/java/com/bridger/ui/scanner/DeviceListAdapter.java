@@ -7,11 +7,12 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 
-import com.bridger.ui.device.DeviceActivity;
+import com.bridger.ui.connection.ConnectionActivity; // Import ConnectionActivity
 
 public class DeviceListAdapter extends ListAdapter<DeviceScanResult, DeviceListViewHolder> {
 
     private final Context context;
+    public static final String EXTRA_DEVICE_ADDRESS = "com.bridger.EXTRA_DEVICE_ADDRESS"; // Define extra key
 
     public DeviceListAdapter(Context context) {
         super(DIFF_CALLBACK);
@@ -29,8 +30,10 @@ public class DeviceListAdapter extends ListAdapter<DeviceScanResult, DeviceListV
         DeviceScanResult device = getItem(position);
         holder.bind(device);
         holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(context, DeviceActivity.class);
-            intent.putExtra(DeviceActivity.EXTRA_SCAN_RESULT, device.getRawScanResult()); // Pass the full ScanResult
+            // Navigate directly to ConnectionActivity
+            Intent intent = new Intent(context, ConnectionActivity.class);
+            // Pass only the device address (String)
+            intent.putExtra(EXTRA_DEVICE_ADDRESS, device.getAddress());
             context.startActivity(intent);
         });
     }
