@@ -95,3 +95,6 @@
     - Moved `NotificationContent` helper class from `NotificationService.java` to its own file (`NotificationContent.java`) in the `model` package for better organization and separation of concerns.
 - **Notification `lastAction` Fix**:
     - Modified `BleConnectionManager.java` to update the `Store`'s `lastAction` with the actual clipboard content after a successful BLE write operation, ensuring the notification displays relevant information.
+
+## 13
+- **Notification Dismissal Fix**: Removed `.setOngoing(true)` from `NotificationService.java` to allow notifications to be dismissible, ensuring the `NotificationDismissedReceiver` is triggered and the notification is recreated as intended.

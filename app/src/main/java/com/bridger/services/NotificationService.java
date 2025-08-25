@@ -141,7 +141,6 @@ public class NotificationService extends Service {
                 .setSmallIcon(R.drawable.ic_launcher_foreground) // Use your app's icon
                 .setContentIntent(syncPendingIntent) // Main tap now triggers sync
                 .addAction(R.drawable.ic_launcher_foreground, "Off", stopSelfPendingIntent) // Use a relevant icon
-                .setOngoing(true) // Makes the notification non-dismissible
                 .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE) // Ensure immediate and persistent display
                 .setDeleteIntent(dismissedPendingIntent) // Attach the delete intent here
                 .build();
