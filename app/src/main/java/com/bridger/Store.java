@@ -12,16 +12,14 @@ public class Store {
     private static volatile Store instance;
 
     // State subjects
-    private final BehaviorSubject<ConnectionState> connectionStateSubject = BehaviorSubject.createDefault(ConnectionState.DISCONNECTED);
-    private final BehaviorSubject<String> lastActionSubject = BehaviorSubject.createDefault("No action yet.");
+    public final BehaviorSubject<ConnectionState> connection = BehaviorSubject.createDefault(ConnectionState.DISCONNECTED);
+    public final BehaviorSubject<String> lastAction = BehaviorSubject.createDefault("No action yet.");
 
     // Event subjects
-    private final PublishSubject<ClipboardEvent> clipboardEventSubject = PublishSubject.create();
-    private final PublishSubject<SystemEvent> systemEventSubject = PublishSubject.create(); // New subject for system events
+    public final PublishSubject<ClipboardEvent> clipboard = PublishSubject.create();
+    public final PublishSubject<SystemEvent> system = PublishSubject.create(); // New subject for system events
 
-    private Store() {
-        // Private constructor to enforce Singleton pattern
-    }
+    private Store() {}
 
     public static Store getInstance() {
         if (instance == null) {
@@ -32,40 +30,5 @@ public class Store {
             }
         }
         return instance;
-    }
-
-    // Getters for state subjects (as Observables to prevent external emission)
-    public BehaviorSubject<ConnectionState> getConnectionStateSubject() {
-        return connectionStateSubject;
-    }
-
-    public BehaviorSubject<String> getLastActionSubject() {
-        return lastActionSubject;
-    }
-
-    // Getter for event subject (as Observable to prevent external emission)
-    public PublishSubject<ClipboardEvent> getClipboardEventSubject() {
-        return clipboardEventSubject;
-    }
-
-    public PublishSubject<SystemEvent> getSystemEventSubject() {
-        return systemEventSubject;
-    }
-
-    // Actions (methods to update state or dispatch events)
-    public void updateConnectionState(ConnectionState newState) {
-        connectionStateSubject.onNext(newState);
-    }
-
-    public void updateLastAction(String action) {
-        lastActionSubject.onNext(action);
-    }
-
-    public void dispatchClipboardEvent(ClipboardEvent event) {
-        clipboardEventSubject.onNext(event);
-    }
-
-    public void dispatchSystemEvent(SystemEvent event) {
-        systemEventSubject.onNext(event);
     }
 }

@@ -49,8 +49,8 @@ public class NotificationService extends Service {
 
         // Combine connection state and last action updates into a single stream
         disposables.add(Observable.combineLatest(
-                        store.getConnectionStateSubject(),
-                        store.getLastActionSubject(),
+                        store.connection,
+                        store.lastAction,
                         NotificationContent::from) // Use the static from method
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -63,8 +63,8 @@ public class NotificationService extends Service {
         Log.d(TAG, "NotificationService onStartCommand: Service command received. Intent action: " + (intent != null ? intent.getAction() : "null"));
 
         // Get current state from Store to update notification immediately
-        ConnectionState state = store.getConnectionStateSubject().getValue();
-        String lastAction = store.getLastActionSubject().getValue();
+        ConnectionState state = store.connection.getValue();
+        String lastAction = store.lastAction.getValue();
         Notification notification = buildNotification(NotificationContent.from(state, lastAction));
 
         // Ensure notification is shown/re-shown every time onStartCommand is called

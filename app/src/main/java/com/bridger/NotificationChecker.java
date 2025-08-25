@@ -29,7 +29,7 @@ public class NotificationChecker {
     }
 
     private void setupEventSubscription() {
-        disposables.add(store.getSystemEventSubject() // Subscribe to SystemEventSubject
+        disposables.add(store.system // Subscribe to SystemEventSubject
                 .filter(event -> event.getType() == SystemEvent.EventType.CHECK_NOTIFICATION_PRESENCE) // Use SystemEvent.EventType
                 .subscribeOn(Schedulers.io())
                 .subscribe(event -> checkAndRecreateNotification(),

@@ -37,11 +37,11 @@ public class ClipboardHandlerActivity extends Activity {
     private void readAndDispatchClipboard() {
         String clipboardText = clipboardUtility.readFromClipboard();
         if (clipboardText != null) {
-            store.dispatchClipboardEvent(ClipboardEvent.createSendRequestedEvent(clipboardText));
+            store.clipboard.onNext(ClipboardEvent.createSendRequestedEvent(clipboardText));
             Log.d(TAG, "Clipboard text read and dispatched to Store: " + clipboardText);
         } else {
             Log.w(TAG, "Clipboard is empty or contains non-text data. No event dispatched.");
-            store.updateLastAction("Clipboard empty."); // Update last action in Store
+            store.lastAction.onNext("Clipboard empty."); // Update last action in Store
         }
     }
 

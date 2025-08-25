@@ -41,7 +41,7 @@ public class BleConnectionManager {
         bleManager.setConnectionObserver(new ConnectionObserver() {
             @Override
             public void onDeviceConnecting(@NonNull BluetoothDevice device) {
-                store.updateConnectionState(ConnectionState.CONNECTING);
+                store.connection.onNext(ConnectionState.CONNECTING);
             }
 
             @Override
@@ -51,34 +51,34 @@ public class BleConnectionManager {
 
             @Override
             public void onDeviceFailedToConnect(@NonNull BluetoothDevice device, int reason) {
-                store.updateConnectionState(ConnectionState.FAILED);
+                store.connection.onNext(ConnectionState.FAILED);
             }
 
             @Override
             public void onDeviceReady(@NonNull BluetoothDevice device) {
-                store.updateConnectionState(ConnectionState.CONNECTED);
+                store.connection.onNext(ConnectionState.CONNECTED);
             }
 
             @Override
             public void onDeviceDisconnecting(@NonNull BluetoothDevice device) {
-                store.updateConnectionState(ConnectionState.DISCONNECTING);
+                store.connection.onNext(ConnectionState.DISCONNECTING);
             }
 
             @Override
             public void onDeviceDisconnected(@NonNull BluetoothDevice device, int reason) {
-                store.updateConnectionState(ConnectionState.DISCONNECTED);
+                store.connection.onNext(ConnectionState.DISCONNECTED);
             }
         });
 
         // Subscribe to clipboard events from the Store to handle outgoing data
-        disposables.add(store.getClipboardEventSubject()
+        disposables.add(store.clipboard
                 .filter(event -> event.getType() == ClipboardEvent.EventType.SEND_REQUESTED)
                 .map(ClipboardEvent::getData) // Get text data from event
                 .flatMapCompletable(text -> {
                     if (text != null) {
                         Data data = new Data(text.getBytes());
                         return bleManager.performWriteCharacteristic(data)
-                                .doOnComplete(() -> store.updateLastAction("Sent: " + text)); // Update last action on success
+                                .doOnComplete(() -> store.lastAction.onNext("Sent: " + text)); // Update last action on success
                     }
                     return Completable.complete(); // No text to send
                 })
@@ -89,7 +89,7 @@ public class BleConnectionManager {
                 ));
 
         // Subscribe to CONNECT_REQUESTED events from the Store to initiate connection
-        disposables.add(store.getClipboardEventSubject()
+        disposables.add(store.clipboard
                 .filter(event -> event.getType() == ClipboardEvent.EventType.CONNECT_REQUESTED)
                 .map(ClipboardEvent::getData) // Get device address
                 .subscribeOn(Schedulers.io())
@@ -102,17 +102,17 @@ public class BleConnectionManager {
                                 connect(device); // Call the connect method
                             } else {
                                 Log.e(TAG, "BluetoothDevice not found for address: " + deviceAddress);
-                                store.updateConnectionState(ConnectionState.FAILED);
+                                store.connection.onNext(ConnectionState.FAILED);
                             }
                         } else {
                             Log.e(TAG, "BluetoothAdapter not available.");
-                            store.updateConnectionState(ConnectionState.FAILED);
+                            store.connection.onNext(ConnectionState.FAILED);
                         }
                     }
                 }, throwable -> Log.e(TAG, "Error observing CONNECT_REQUESTED: " + throwable.getMessage())));
 
         // Subscribe to DISCONNECT_REQUESTED events from the Store
-        disposables.add(store.getClipboardEventSubject()
+        disposables.add(store.clipboard
                 .filter(event -> event.getType() == ClipboardEvent.EventType.DISCONNECT_REQUESTED)
                 .subscribeOn(Schedulers.io())
                 .subscribe(event -> {
@@ -136,8 +136,8 @@ public class BleConnectionManager {
     }
 
     public void connect(@NonNull BluetoothDevice device) {
-        if (store.getConnectionStateSubject().getValue() == ConnectionState.CONNECTED ||
-            store.getConnectionStateSubject().getValue() == ConnectionState.CONNECTING) {
+        if (store.connection.getValue() == ConnectionState.CONNECTED ||
+            store.connection.getValue() == ConnectionState.CONNECTING) {
             Log.w(TAG, "Already connected or connecting to a device.");
             return;
         }
@@ -162,7 +162,7 @@ public class BleConnectionManager {
             SUPPORTED_CHARACTERISTICS.put(Constants.MAC_TO_ANDROID_CHARACTERISTIC_UUID, new Characteristic(Constants.MAC_TO_ANDROID_CHARACTERISTIC_UUID, data -> {
                 String value = data.getStringValue(0);
                 if (value == null) return;
-                store.dispatchClipboardEvent(ClipboardEvent.createReceiveEvent(value));
+                store.clipboard.onNext(ClipboardEvent.createReceiveEvent(value));
             }));
         }
 

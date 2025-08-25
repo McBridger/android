@@ -139,7 +139,20 @@ The project relies on the following libraries from Nordic Semiconductor for robu
     -   [ ] On app startup (`MainActivity`), check `SharedPreferences` for a saved address.
     -   [ ] If an address exists, dispatch a `connect` action to the `Store` immediately and navigate to `ConnectionActivity`, allowing the user to bypass the scanner and see the connection process in a unified way.
 
-### Phase 9: Dependency Injection with Hilt
+### Phase 9: UI/UX Overhaul (Component-Based Refactor)
+-   [ ] **9.1: Create `HeaderView` Component:**
+    -   [ ] Create `app/src/main/res/layout/view_header.xml` for the header's layout.
+    -   [ ] Create `app/src/main/java/com/bridger/ui/HeaderView.java` as a custom view.
+    -   [ ] Implement reactive logic in `HeaderView.java` to subscribe to `Store.getInstance().getConnectionStateSubject()` and dynamically change its background color (gray for idle/disconnected, deep blue for connecting/connected).
+-   [ ] **9.2: Integrate `HeaderView`:**
+    -   [ ] Replace the existing `Toolbar` in `app/src/main/res/layout/activity_main.xml` with the new `<com.bridger.ui.HeaderView />` component.
+    -   [ ] Replace the existing `Toolbar` in `app/src/main/res/layout/activity_connection.xml` with the new `<com.bridger.ui.HeaderView />` component.
+-   [ ] **9.3: Redesign `Device` Component:**
+    -   [ ] Modify `app/src/main/res/layout/list_item_device_detailed.xml` to include elevation (shadows), an icon, and improved layout for better visual appeal.
+-   [ ] **9.4: Redesign `ClipboardItem` Component:**
+    -   [ ] Modify `app/src/main/res/layout/list_item_clipboard_history.xml` for a more visually distinct display, potentially with different styles for sent/received items.
+
+### Phase 10: Dependency Injection with Hilt
 -   [ ] **Setup Hilt:**
     -   [ ] Add Hilt dependencies to the `build.gradle` files.
     -   [ ] Create a custom `Application` class and annotate it with `@HiltAndroidApp`.
@@ -148,20 +161,15 @@ The project relies on the following libraries from Nordic Semiconductor for robu
 -   [ ] **Inject Dependencies:**
     -   [ ] Refactor all Activities, Services, and ViewModels to receive their dependencies via `@Inject` in their constructors or fields, removing all manual singleton access (`.getInstance()`).
 
-### Phase 10: Code Refactoring
+### Phase 11: Code Refactoring
 -   [ ] **Refactor `BleConnectionManager` for Unified Characteristic Handling:**
     1.  [ ] **Unified Callback Model:** Modify the `Characteristic` model to hold separate functional interfaces for read and write operations.
     2.  [ ] **Declarative Map:** Update the `SUPPORTED_CHARACTERISTICS` map to use the new callback model.
     3.  [ ] **Generic `write` Method:** Create a single, generic public `writeToCharacteristic(UUID, Data)` method.
 
-### Phase 11: Testing
+### Phase 12: Testing
 -   [ ] **Unit Tests:** Add unit tests, leveraging Hilt for easy dependency mocking.
 -   [ ] **Integration Tests:** Add integration tests for the clipboard sync flow.
-
-### Phase 12: UI/UX Overhaul
--   [ ] **Design System:** Establish a consistent design system (colors, typography, spacing).
--   [ ] **Layout Redesign:** Redesign the layouts for all activities (`MainActivity`, `ConnectionActivity`) for better visual appeal and usability.
--   [ ] **User Feedback:** Incorporate better user feedback mechanisms (e.g., more descriptive connection status messages, loading indicators).
 
 ### Phase 13: Future Modernization (Kotlin Migration)
 -   [ ] **Progressive Kotlin Migration:**

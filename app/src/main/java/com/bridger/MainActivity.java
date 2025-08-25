@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
   protected void onResume() {
     super.onResume();
     // Dispatch event to check notification presence
-    Store.getInstance().dispatchSystemEvent(SystemEvent.CHECK_NOTIFICATION_PRESENCE);
+    Store.getInstance().system.onNext(SystemEvent.CHECK_NOTIFICATION_PRESENCE);
     Log.d(TAG, "onResume: Dispatched CHECK_NOTIFICATION_PRESENCE system event.");
   }
 

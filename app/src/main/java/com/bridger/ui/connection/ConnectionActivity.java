@@ -43,10 +43,10 @@ public class ConnectionActivity extends AppCompatActivity {
             String deviceAddress = intent.getStringExtra(DeviceListAdapter.EXTRA_DEVICE_ADDRESS);
             if (deviceAddress != null) {
                 Log.d("ConnectionActivity", "Attempting to connect to device: " + deviceAddress);
-                store.dispatchClipboardEvent(ClipboardEvent.createConnectEvent(deviceAddress));
+                store.clipboard.onNext(ClipboardEvent.createConnectEvent(deviceAddress));
             } else {
                 Log.e("ConnectionActivity", "Device address is null.");
-                store.updateLastAction("Error: Device address missing.");
+                store.lastAction.onNext("Error: Device address missing.");
             }
         } else {
             Log.w("ConnectionActivity", "No device address passed via Intent. Assuming manual connection or persistence.");
@@ -58,7 +58,7 @@ public class ConnectionActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         // Dispatch event to check notification presence
-        Store.getInstance().dispatchSystemEvent(SystemEvent.CHECK_NOTIFICATION_PRESENCE);
+        Store.getInstance().system.onNext(SystemEvent.CHECK_NOTIFICATION_PRESENCE);
         Log.d("ConnectionActivity", "onResume: Dispatched CHECK_NOTIFICATION_PRESENCE system event.");
     }
 
@@ -72,7 +72,7 @@ public class ConnectionActivity extends AppCompatActivity {
     private void setupUI() {
         binding.shutdownSyncButton.setOnClickListener(v -> {
             // Dispatch a disconnect request to the Store
-            store.dispatchClipboardEvent(ClipboardEvent.DISCONNECT_REQUESTED);
+            store.clipboard.onNext(ClipboardEvent.DISCONNECT_REQUESTED);
             Log.d("ConnectionActivity", "Disconnect requested via Store.");
         });
 

@@ -45,7 +45,7 @@ public class ConnectionViewModel extends AndroidViewModel {
             @Override
             protected void onActive() {
                 super.onActive();
-                disposables.add(store.getConnectionStateSubject()
+                disposables.add(store.connection
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(this::setValue,
@@ -65,7 +65,7 @@ public class ConnectionViewModel extends AndroidViewModel {
             @Override
             protected void onActive() {
                 super.onActive();
-                disposables.add(store.getLastActionSubject()
+                disposables.add(store.lastAction
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(this::setValue,
@@ -89,7 +89,7 @@ public class ConnectionViewModel extends AndroidViewModel {
     }
 
     private void observeReceivedEvents() {
-        disposables.add(store.getClipboardEventSubject()
+        disposables.add(store.clipboard
                 .filter(event -> event.getType() == ClipboardEvent.EventType.RECEIVED)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -104,7 +104,7 @@ public class ConnectionViewModel extends AndroidViewModel {
     }
 
     private void observeSentEvents() {
-        disposables.add(store.getClipboardEventSubject()
+        disposables.add(store.clipboard
                 .filter(event -> event.getType() == ClipboardEvent.EventType.SENT)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
