@@ -98,3 +98,6 @@
 
 ## 13
 - **Notification Dismissal Fix**: Removed `.setOngoing(true)` from `NotificationService.java` to allow notifications to be dismissible, ensuring the `NotificationDismissedReceiver` is triggered and the notification is recreated as intended.
+
+## 14
+- **Notification Presence Check Optimization**: Optimized the notification presence check to use `NotificationManager.getActiveNotifications()` to verify if the persistent notification (ID 1) is truly missing before restarting the `NotificationService`. This prevents unnecessary service restarts and improves efficiency. The logic is handled by `NotificationChecker.java`, which subscribes to `SystemEvent.CHECK_NOTIFICATION_PRESENCE` dispatched from activities.

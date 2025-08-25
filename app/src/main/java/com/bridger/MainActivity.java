@@ -19,6 +19,7 @@ import com.bridger.ui.scanner.ScannerViewModel;
 import com.bridger.services.NotificationService; // Import NotificationService
 import android.content.Intent; // Import Intent
 import androidx.core.content.ContextCompat; // Import ContextCompat
+import com.bridger.events.SystemEvent; // Import SystemEvent
 
 public class MainActivity extends AppCompatActivity {
 
@@ -27,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
   private DeviceListAdapter deviceListAdapter;
   private ScannerViewModel scannerViewModel;
   private PermissionsManager permissionsManager;
+  private NotificationChecker notificationChecker; // Declare NotificationChecker
 
   private final CompositeDisposable activityDisposables = new CompositeDisposable();
 
@@ -53,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
 
     scannerViewModel = new ViewModelProvider(this).get(ScannerViewModel.class);
     permissionsManager = new PermissionsManager(this);
+    notificationChecker = new NotificationChecker(getApplicationContext()); // Initialize NotificationChecker
 
     activityDisposables.add(
         permissionsManager.requestPermissions()
@@ -80,6 +83,14 @@ public class MainActivity extends AppCompatActivity {
   }
 
   @Override
+  protected void onResume() {
+    super.onResume();
+    // Dispatch event to check notification presence
+    Store.getInstance().dispatchSystemEvent(SystemEvent.CHECK_NOTIFICATION_PRESENCE);
+    Log.d(TAG, "onResume: Dispatched CHECK_NOTIFICATION_PRESENCE system event.");
+  }
+
+  @Override
   public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
     super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     permissionsManager.onResult(requestCode, grantResults);
@@ -89,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
   protected void onDestroy() {
     super.onDestroy();
     activityDisposables.clear();
+    notificationChecker.dispose(); // Dispose of NotificationChecker
     Log.d(TAG, "MainActivity destroyed, activity disposables cleared.");
   }
 }

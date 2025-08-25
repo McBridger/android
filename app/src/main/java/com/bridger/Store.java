@@ -1,6 +1,7 @@
 package com.bridger;
 
 import com.bridger.events.ClipboardEvent;
+import com.bridger.events.SystemEvent;
 import com.bridger.model.ConnectionState;
 
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -16,6 +17,7 @@ public class Store {
 
     // Event subjects
     private final PublishSubject<ClipboardEvent> clipboardEventSubject = PublishSubject.create();
+    private final PublishSubject<SystemEvent> systemEventSubject = PublishSubject.create(); // New subject for system events
 
     private Store() {
         // Private constructor to enforce Singleton pattern
@@ -46,6 +48,10 @@ public class Store {
         return clipboardEventSubject;
     }
 
+    public PublishSubject<SystemEvent> getSystemEventSubject() {
+        return systemEventSubject;
+    }
+
     // Actions (methods to update state or dispatch events)
     public void updateConnectionState(ConnectionState newState) {
         connectionStateSubject.onNext(newState);
@@ -57,5 +63,9 @@ public class Store {
 
     public void dispatchClipboardEvent(ClipboardEvent event) {
         clipboardEventSubject.onNext(event);
+    }
+
+    public void dispatchSystemEvent(SystemEvent event) {
+        systemEventSubject.onNext(event);
     }
 }

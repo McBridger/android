@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import android.content.Intent;
 import com.bridger.ui.scanner.DeviceListAdapter; // Import DeviceListAdapter for EXTRA_DEVICE_ADDRESS
 import android.util.Log; // Import Log
+import com.bridger.NotificationChecker; // Import NotificationChecker
+import com.bridger.events.SystemEvent; // Import SystemEvent
 
 public class ConnectionActivity extends AppCompatActivity {
 
@@ -17,6 +19,7 @@ public class ConnectionActivity extends AppCompatActivity {
     private ConnectionViewModel viewModel;
     private ClipboardHistoryAdapter historyAdapter;
     private Store store; // Reference to the Store
+    private NotificationChecker notificationChecker; // Declare NotificationChecker
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +31,8 @@ public class ConnectionActivity extends AppCompatActivity {
 
         viewModel = new ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory.getInstance(getApplication()))
                 .get(ConnectionViewModel.class);
+
+        notificationChecker = new NotificationChecker(getApplicationContext()); // Initialize NotificationChecker
 
         setupUI();
         observeViewModel();
@@ -50,10 +55,18 @@ public class ConnectionActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        // Dispatch event to check notification presence
+        Store.getInstance().dispatchSystemEvent(SystemEvent.CHECK_NOTIFICATION_PRESENCE);
+        Log.d("ConnectionActivity", "onResume: Dispatched CHECK_NOTIFICATION_PRESENCE system event.");
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
-        // No need to stop ClipboardSyncService here, as it's replaced by NotificationService
-        // and ClipboardUtility, which manage their own lifecycles or are singletons.
+        notificationChecker.dispose(); // Dispose of NotificationChecker
+        Log.d("ConnectionActivity", "ConnectionActivity destroyed, notificationChecker disposed.");
     }
 
     private void setupUI() {
